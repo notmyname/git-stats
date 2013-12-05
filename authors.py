@@ -8,7 +8,7 @@ author_by_name = {}
 author_by_email = {}
 for line in authors:
     try:
-        name, email = line.split('(')
+        name, email = line.rsplit('(', 1)
     except ValueError:
         continue
     name = name.strip()
