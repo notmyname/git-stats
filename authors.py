@@ -23,8 +23,6 @@ for line in authors:
     email = email.replace('>', '').strip()
     vcs_authors.append((name, email))
 
-leftovers = author_by_email.copy()
-
 for name, email in vcs_authors:
     if email not in author_by_email:
         print 'MISSING: %s (%s)' % (name, email)
@@ -34,4 +32,5 @@ for name, email in vcs_authors:
     elif name not in author_by_name:
             print '  same email (%s) but different name (%s vs %s) in AUTHORS' \
                 % (email, name, author_by_email[email])
-#print leftovers
+
+# TODO: track names that are in AUTHORS but not in vcs
