@@ -33,4 +33,11 @@ for name, email in vcs_authors:
             print '  same email (%s) but different name (%s vs %s) in AUTHORS' \
                 % (email, name, author_by_email[email])
 
-# TODO: track names that are in AUTHORS but not in vcs
+# track names that are in AUTHORS but not in vcs
+credited_but_no_commits = []
+for email, name in author_by_email.items():
+    if (name, email) not in vcs_authors:
+        credited_but_no_commits.append((name, email))
+if credited_but_no_commits:
+    print '-' * 8 + 'Credited authors with no commits' + '-' * 8
+    print '\n'.join('%s (%s)' % (n,e) for (n,e) in credited_but_no_commits)
