@@ -2,6 +2,10 @@
 
 import sys
 
+ignored_authors = [  # known bots, not real people
+    ('OpenStack Proposal Bot', 'openstack-infra@lists.openstack.org'),
+]
+
 authors = [x.strip() for x in open('/Users/john/Documents/swift/AUTHORS', 'rb').readlines()]
 author_by_name = {}
 author_by_email = {}
@@ -24,6 +28,8 @@ for line in authors:
     vcs_authors.append((name, email))
 
 for name, email in vcs_authors:
+    if (name, email) in ignored_authors:
+        continue
     if email not in author_by_email:
         print 'MISSING: %s (%s)' % (name, email)
         if name in author_by_name:
