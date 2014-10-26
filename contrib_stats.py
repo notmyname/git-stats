@@ -1,20 +1,20 @@
 import subprocess
 
-max_lookback = 2000
-chunk_size = 30
-all_chunks = []
+chunk_size = 30  # number of days for one "chunk" of time
 
-i = 0
-while i < max_lookback:
-    start = i
-    i += chunk_size
-    if i > max_lookback:
-        break
-    end = i
-    all_chunks.append((start, end))
+def timeblock_iter():
+    start = 0
+    end = start + chunk_size
+    while True:
+        yield (start, end)
+        start = end
+        end += chunk_size
 
-for start, end in all_chunks:
+for start, end in timeblock_iter():
     cmd = "git shortlog -nes --no-merges --before='@{%d days ago}' --since='@{%d days ago}' | wc -l" % (start, end)
     count = subprocess.check_output(cmd, shell=True)
     count.strip()
-    print '%d\t%d\t%d' % (start, end, int(count))
+    count = int(count)
+    if count <= 0:
+        break
+    print '%d\t%d\t%d' % (start, end, count)
