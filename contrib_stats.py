@@ -1,8 +1,9 @@
+import json
 import subprocess
 
 from matplotlib import pyplot
 
-chunk_size = 7  # number of days for one "chunk" of time
+chunk_size = 30  # number of days for one "chunk" of time
 
 def timeblock_iter():
     start = 0
@@ -20,19 +21,24 @@ def get_data():
         count = subprocess.check_output(cmd, shell=True)
         count.strip()
         count = int(count)
-        if count <= 0:
-            zeros_found += 1
-        if zeros_found >= 5:  # more than 5 chunks at 0 is our escape valve
+        aggregate_cmd = "git shortlog -nes --no-merges --before='@{%d days ago}' | wc -l" % start
+        total = subprocess.check_output(aggregate_cmd, shell=True)
+        total.strip()
+        total = int(total)
+        if total <= 0:
             break
-        data.append((start, end, count))
+        data.append((start, count, total))
     return data
 
-def make_graph():
-    d = get_data()
+def make_graph(d):
     d.reverse()
+    while d[0][1] == 0:
+        d.pop(0)
     starts = [x[0] for x in d]
-    values = [x[2] for x in d]
-    pyplot.plot(starts, values, '-', drawstyle='steps-mid')  #, color='white')
+    values = [x[1] for x in d]
+    totals = [x[2] for x in d]
+    pyplot.plot(starts, values, '-', color='blue', drawstyle='steps')
+    pyplot.plot(starts, totals, '-', color='red')
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
@@ -45,4 +51,12 @@ def make_graph():
     fig.set_frameon(True)
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
 
-make_graph()
+filename = 'contrib_stats.data'
+try:
+    with open(filename, 'rb') as f:
+        raw_data = json.load(f)
+except (IOError, ValueError):
+    raw_data = get_data()
+    with open(filename, 'wb') as f:
+        json.dump(raw_data, f)
+make_graph(raw_data)
