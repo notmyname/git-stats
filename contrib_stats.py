@@ -3,7 +3,7 @@ import subprocess
 
 from matplotlib import pyplot
 
-chunk_size = 30  # number of days for one "chunk" of time
+chunk_size = 14  # number of days for one "chunk" of time
 
 def timeblock_iter():
     start = 0
@@ -38,7 +38,7 @@ def make_graph(d):
     values = [x[1] for x in d]
     totals = [x[2] for x in d]
     pyplot.plot(starts, values, '-', color='blue', drawstyle='steps')
-    pyplot.plot(starts, totals, '-', color='red')
+    #pyplot.plot(starts, totals, '-', color='red')
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
