@@ -3,7 +3,10 @@ import subprocess
 
 from matplotlib import pyplot
 
-chunk_size = 14  # number of days for one "chunk" of time
+# TODO: track contributor half-life
+# TODO: derivative of totals
+
+chunk_size = 180  # number of days for one "chunk" of time
 
 def timeblock_iter():
     start = 0
@@ -37,16 +40,15 @@ def make_graph(d):
     starts = [x[0] for x in d]
     values = [x[1] for x in d]
     totals = [x[2] for x in d]
-    pyplot.plot(starts, values, '-', color='blue', drawstyle='steps')
-    #pyplot.plot(starts, totals, '-', color='red')
+    pyplot.plot(starts, values, '-', color='blue')  #, drawstyle='steps')
+    pyplot.plot(starts, totals, '-', color='red')
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     ax = pyplot.gca()
     ax.invert_xaxis()
-    #ax.set_axis_bgcolor('black')
     fig = pyplot.gcf()
-    fig.set_size_inches(16, 4)
+    fig.set_size_inches(6, 4)
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
