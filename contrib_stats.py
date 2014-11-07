@@ -1,5 +1,7 @@
 import json
 import subprocess
+import datetime
+import re
 
 from matplotlib import pyplot
 
@@ -18,20 +20,39 @@ def timeblock_iter():
         start += 7
         end += 7
 
+def get_max_days_ago():
+    oldest_date = subprocess.check_output(
+        'git log --reverse --format="%ad" --date=short | head -1', shell=True)
+    oldest_date = oldest_date.strip()
+    date = datetime.datetime.strptime(oldest_date, '%Y-%m-%d')
+    delta = datetime.datetime.now() - date
+    return delta.days
+
+def get_one_day(days_ago):
+    cmd = ("git shortlog -es --no-merges --before='@{%d days ago}' "
+            "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
+    out = subprocess.check_output(cmd, shell=True).strip()
+    authors = set()
+    for line in out.split('\n'):
+        line = line.strip()
+        if line:
+            match = re.match(r'\d+\s+(.*)', line)
+            authors.add(match.group(1))
+    return authors
+
 def get_data():
+    '''
+    returns a list of sets. the first element is the list of committers from the
+    first commit to the repo, and the last element is the list of committers from
+    yesterday.
+    '''
+    max_days = get_max_days_ago()
+    max_days = 30
     data = []
-    for start, end in timeblock_iter():
-        cmd = "git shortlog -nes --no-merges --before='@{%d days ago}' --since='@{%d days ago}' | wc -l" % (start, end)
-        count = subprocess.check_output(cmd, shell=True)
-        count.strip()
-        count = int(count)
-        aggregate_cmd = "git shortlog -nes --no-merges --before='@{%d days ago}' | wc -l" % start
-        total = subprocess.check_output(aggregate_cmd, shell=True)
-        total.strip()
-        total = int(total)
-        if total <= 0:
-            break
-        data.append((start, count, total))
+    while max_days >= 0:
+        authors_for_day = get_one_day(max_days)
+        data.append(authors_for_day)
+        max_days -= 1
     return data
 
 def make_graph(d):
@@ -69,11 +90,13 @@ def make_graph(d):
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
 
 filename = 'contrib_stats.data'
+
 try:
     with open(filename, 'rb') as f:
-        raw_data = json.load(f)
+        raw_data = [set(e) for e in json.load(f)]
 except (IOError, ValueError):
     raw_data = get_data()
     with open(filename, 'wb') as f:
-        json.dump(raw_data, f)
+        json.dump([list(e) for e in raw_data], f)
+
 make_graph(raw_data)
