@@ -8,15 +8,15 @@ from matplotlib import pyplot
 # TODO: figure out churn
 # TODO: how long do patches stay in review (first proposal to merge time)
 
-chunk_size = 180  # number of days for one "chunk" of time
+chunk_size = 30  # number of days for one "chunk" of time
 
 def timeblock_iter():
     start = 0
     end = start + chunk_size
     while True:
         yield (start, end)
-        start = end
-        end += chunk_size
+        start += 7
+        end += 7
 
 def get_data():
     data = []
@@ -38,11 +38,24 @@ def make_graph(d):
     d.reverse()
     while d[0][1] == 0:
         d.pop(0)
-    starts = [x[0] for x in d]
-    values = [x[1] for x in d]
+    change_in_cumulative = []
+    change_in_period = []
+    starts = []
+    values = []
+    last_count = 0
+    last_total = 0
+    for start, count, total in d:
+        starts.append(start)
+        values.append(count)
+        change_in_cumulative.append(total - last_total)
+        change_in_period.append(count - last_count)
+        last_count = count
+        last_total = total
     totals = [x[2] for x in d]
-    pyplot.plot(starts, values, '-', color='blue', label='active')
-    pyplot.plot(starts, totals, '-', color='red', label='cumulative')
+    pyplot.plot(starts, values, '-', color='blue', label="Contribs in period")  #, drawstyle='steps')
+    #pyplot.plot(starts, totals, '-', color='red', label="Total")
+    pyplot.plot(starts, change_in_cumulative, '-', color='green', label="Totals rate of change")
+    pyplot.plot(starts, change_in_period, '-', color='black', label="Period rate of change")
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
@@ -50,7 +63,7 @@ def make_graph(d):
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
-    fig.set_size_inches(6, 4)
+    fig.set_size_inches(16, 4)
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
