@@ -3,7 +3,7 @@
 ORIGPWD=`pwd`
 SWIFTDIR="$HOME/Documents/swift"
 
-mv ${ORIGPWD}/swift_contrib_stats.data ${SWIFTDIR}/contrib_stats.data
+mv ${ORIGPWD}/swift_contrib_stats.data ${SWIFTDIR}/contrib_stats.data 2>/dev/null
 
 cd ${SWIFTDIR}
 python "$ORIGPWD"/contrib_stats.py

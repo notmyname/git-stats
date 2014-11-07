@@ -5,6 +5,8 @@ from matplotlib import pyplot
 
 # TODO: track contributor half-life
 # TODO: derivative of totals
+# TODO: figure out churn
+# TODO: how long do patches stay in review (first proposal to merge time)
 
 chunk_size = 180  # number of days for one "chunk" of time
 
