@@ -20,7 +20,6 @@ def timeblock_iter():
 
 def get_data():
     data = []
-    zeros_found = 0
     for start, end in timeblock_iter():
         cmd = "git shortlog -nes --no-merges --before='@{%d days ago}' --since='@{%d days ago}' | wc -l" % (start, end)
         count = subprocess.check_output(cmd, shell=True)
@@ -42,11 +41,12 @@ def make_graph(d):
     starts = [x[0] for x in d]
     values = [x[1] for x in d]
     totals = [x[2] for x in d]
-    pyplot.plot(starts, values, '-', color='blue')  #, drawstyle='steps')
-    pyplot.plot(starts, totals, '-', color='red')
+    pyplot.plot(starts, values, '-', color='blue', label='active')
+    pyplot.plot(starts, totals, '-', color='red', label='cumulative')
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
+    pyplot.legend(loc='upper left')
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
