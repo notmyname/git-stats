@@ -56,9 +56,6 @@ def get_data():
     return data
 
 def make_graph(d):
-    d.reverse()
-    while d[0][1] == 0:
-        d.pop(0)
     change_in_cumulative = []
     change_in_period = []
     starts = []
