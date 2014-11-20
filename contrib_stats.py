@@ -129,8 +129,9 @@ def make_graph(contribs_by_days_ago):
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    pyplot.plot(xs, dactive, '-', color='blue', label="Active contributors")
-    pyplot.plot(xs, dtotal, '-', color='red', label="Total contributors")
+    lookback = 60
+    pyplot.plot(xs[-lookback:], dactive[-lookback:], '-', color='blue', label="Active contributors")
+    pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-', color='red', label="Total contributors")
     pyplot.title('Change in contributors over time')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Change in contributors')
