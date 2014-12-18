@@ -1,4 +1,4 @@
-# git log --format='%h' --shortstat --no-merges 1.4.8.. | python ./big_commit.py
+# git log --format='%h' --shortstat 1.4.8.. | python ./big_commit.py
 
 import sys
 from collections import defaultdict
