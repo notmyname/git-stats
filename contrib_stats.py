@@ -11,15 +11,9 @@ from matplotlib import pyplot
 # TODO: figure out churn
 # TODO: how long do patches stay in review (first proposal to merge time)
 
-chunk_size = 30  # number of days for one "chunk" of time
-
-def timeblock_iter():
-    start = 0
-    end = start + chunk_size
-    while True:
-        yield (start, end)
-        start += 7
-        end += 7
+# separate active and total graphs
+# reduce to: Are active contribs going up or down?
+# do above for day, week, month, year
 
 def get_max_days_ago():
     oldest_date = subprocess.check_output(
@@ -30,7 +24,7 @@ def get_max_days_ago():
     return delta.days
 
 def get_one_day(days_ago):
-    cmd = ("git shortlog -es --no-merges --before='@{%d days ago}' "
+    cmd = ("git shortlog -es --before='@{%d days ago}' "
             "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
     out = subprocess.check_output(cmd, shell=True).strip()
     authors = set()
@@ -95,7 +89,7 @@ def make_graph(contribs_by_days_ago):
     actives = []
     dtotal = []
     dactive = []
-    rs = RollingSet(30)
+    rs = RollingSet(30)  # number of days a contributor stays "active"
     for c in contribs_by_days_ago:
         all_contribs |= c
         totals.append(len(all_contribs))
@@ -114,8 +108,10 @@ def make_graph(contribs_by_days_ago):
     lens = map(len, [totals, actives, dtotal, dactive, xs])
     assert len(set(lens)) == 1
 
-    pyplot.plot(xs, actives, '-', color='blue', label="Active contributors")
-    pyplot.plot(xs, totals, '-', color='red', label="Total contributors")
+    pyplot.plot(xs, actives, '-', color='blue', label="Active contributors",
+                drawstyle="steps")
+    #pyplot.plot(xs, totals, '-', color='red', label="Total contributors",
+    #            drawstyle="steps")
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
@@ -130,8 +126,10 @@ def make_graph(contribs_by_days_ago):
     pyplot.close()
 
     lookback = 60
-    pyplot.plot(xs[-lookback:], dactive[-lookback:], '-', color='blue', label="Active contributors")
-    pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-', color='red', label="Total contributors")
+    pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
+                color='blue', label="Active contributors", drawstyle="steps")
+    pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
+                color='red', label="Total contributors", drawstyle="steps")
     pyplot.title('Change in contributors over time')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Change in contributors')
