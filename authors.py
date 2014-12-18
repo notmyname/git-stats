@@ -1,9 +1,10 @@
-# vcs_authors is the output of `git shortlog -nes --no-merges`
+# vcs_authors is the output of `git shortlog -nes`
 
 import sys
 
 ignored_authors = [  # known bots, not real people
     ('OpenStack Proposal Bot', 'openstack-infra@lists.openstack.org'),
+    ('Jenkins', 'jenkins@review.openstack.org'),
 ]
 
 authors = [x.strip() for x in open('/Users/john/Documents/swift/AUTHORS', 'rb').readlines()]
@@ -33,7 +34,7 @@ for name, email in vcs_authors:
     if email not in author_by_email:
         print 'MISSING: %s (%s)' % (name, email)
         if name in author_by_name:
-            print '  same name (%s) but different email (%s vs %s) in AUTHORS (%s)' \
+            print '  same name (%s) but different email (%s vs %s) in AUTHORS' \
                 % (name, email, author_by_name[name])
     elif name not in author_by_name:
             print '  same email (%s) but different name (%s vs %s) in AUTHORS' \
