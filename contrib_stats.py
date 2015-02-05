@@ -108,10 +108,11 @@ def make_graph(contribs_by_days_ago):
     lens = map(len, [totals, actives, dtotal, dactive, xs])
     assert len(set(lens)) == 1
 
-    pyplot.plot(xs, actives, '-', color='blue', label="Active contributors",
-                drawstyle="steps")
-    #pyplot.plot(xs, totals, '-', color='red', label="Total contributors",
-    #            drawstyle="steps")
+    lookback = 6000
+    pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
+                label="Active contributors", drawstyle="steps")
+    #pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
+    #            label="Total contributors", drawstyle="steps")
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
@@ -125,7 +126,7 @@ def make_graph(contribs_by_days_ago):
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    lookback = 60
+    lookback = 90
     pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
                 color='blue', label="Active contributors", drawstyle="steps")
     pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',

@@ -4,3 +4,4 @@ vcs_authors
 swift_contrib_deltas.png
 *~
 *.swp
+swift*.patches
