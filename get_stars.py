@@ -35,19 +35,19 @@ for line in raw.split('\n'):
         break
     try:
         subject = patch['subject']
-        limit = 70
+        limit = 50
         if len(subject) > limit:
             subject = subject[:(limit - 3)] + '...'
         owner = patch['owner']['name']
-        url = patch['url']
-        starred.append({'owner': owner,
+        starred.append({'owner': owner.title(),
                         'subject': subject,
-                        'url': url})
+                        'url': patch['url'],
+                        'number': patch['number']})
     except KeyError:
         # last line
         pass
 
 
-template = '%(subject)s (%(owner)s) - %(url)s'
+template = '%(subject)s (%(owner)s) - patch %(number)s'
 for item in starred:
     print template % item
