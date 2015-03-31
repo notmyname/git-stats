@@ -6,21 +6,22 @@ import subprocess
 import shlex
 import json
 
-cmd = '''
-/usr/bin/ssh -p 29418 notmyname@review.openstack.org 'gerrit query --format JSON \
-(starredby:notmyname OR \
-starredby:torgomatic OR \
-starredby:cschwede OR \
-starredby:"alistair.coles@hp.com" OR \
-starredby:"darrell@swiftstack.com" OR \
-starredby:"david.goetz@rackspace.com" OR \
-starredby:"greglange@gmail.com" OR \
-starredby:"matt@oliver.net.au" OR \
-starredby:"mike@weirdlooking.com" OR \
-starredby:"zaitcev@kotori.zaitcev.us" OR \
-starredby:"paul.e.luse@intel.com") \
-AND status:open'
-'''
+cmd = (
+'/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '\
+'--format JSON '\
+'(starredby:notmyname'\
+#' OR starredby:torgomatic'\
+#' OR starredby:cschwede'\
+#' OR starredby:"alistair.coles@hp.com"'\
+#' OR starredby:"darrell@swiftstack.com"'\
+#' OR starredby:"david.goetz@rackspace.com"'\
+#' OR starredby:"greglange@gmail.com"'\
+#' OR starredby:"matt@oliver.net.au"'\
+#' OR starredby:"mike@weirdlooking.com"'\
+#' OR starredby:"zaitcev@kotori.zaitcev.us"'\
+#' OR starredby:"paul.e.luse@intel.com"'\
+') AND status:open\''
+)
 
 args = shlex.split(cmd)
 p = subprocess.Popen(args, stdout=subprocess.PIPE)
