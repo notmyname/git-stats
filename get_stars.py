@@ -20,7 +20,7 @@ cmd = (
 #' OR starredby:"mike@weirdlooking.com"'\
 #' OR starredby:"zaitcev@kotori.zaitcev.us"'\
 #' OR starredby:"paul.e.luse@intel.com"'\
-') AND status:open\''
+')\''
 )
 
 args = shlex.split(cmd)
@@ -42,12 +42,13 @@ for line in raw.split('\n'):
         starred.append({'owner': owner.title(),
                         'subject': subject,
                         'url': patch['url'],
-                        'number': patch['number']})
+                        'number': patch['number'],
+                        'status': patch['status']})
     except KeyError:
         # last line
         pass
 
 
-template = '%(subject)s (%(owner)s) - patch %(number)s'
+template = '%(subject)s (%(owner)s) - patch %(number)s - (%(status)s)'
 for item in starred:
     print template % item
