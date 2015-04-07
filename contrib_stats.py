@@ -32,7 +32,9 @@ def get_one_day(days_ago):
         line = line.strip()
         if line:
             match = re.match(r'\d+\s+(.*)', line)
-            authors.add(match.group(1))
+            author = match.group(1)
+            if author != 'Jenkins <jenkins@review.openstack.org>':
+                authors.add(author)
     return authors
 
 def get_data():
@@ -61,7 +63,7 @@ class WindowQueue(object):
 
     def add(self, o):
         if len(self.q) > self.window_size:
-            raise Exception('I dun fucked up')
+            raise Exception('oops')
         e = None
         if len(self.q) == self.window_size:
             e = self.q.pop(0)
@@ -126,7 +128,7 @@ def make_graph(contribs_by_days_ago):
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    lookback = 90
+    lookback = 180
     pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
                 color='blue', label="Active contributors", drawstyle="steps")
     pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
