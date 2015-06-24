@@ -116,6 +116,20 @@ def make_graph(contribs_by_days_ago):
     lookback = days_ago
     pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
                 label="Active contributors", drawstyle="steps")
+    pyplot.title('Active contributors')
+    pyplot.xlabel('Days Ago')
+    pyplot.ylabel('Contributors')
+    pyplot.legend(loc='upper left')
+    pyplot.autoscale(enable=True, axis='x', tight=True)
+    ax = pyplot.gca()
+    ax.invert_xaxis()
+    fig = pyplot.gcf()
+    fig.set_size_inches(16, 4)
+    fig.dpi = 200
+    fig.set_frameon(True)
+    fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
     pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
                label="Total contributors", drawstyle="steps")
     pyplot.title('Active contributors')
@@ -129,7 +143,7 @@ def make_graph(contribs_by_days_ago):
     fig.set_size_inches(16, 4)
     fig.dpi = 200
     fig.set_frameon(True)
-    fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
+    fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
     lookback = 180
