@@ -23,6 +23,8 @@ def get_max_days_ago():
     delta = datetime.datetime.now() - date
     return delta.days
 
+MAX_DAYS_AGO = get_max_days_ago()
+
 def get_one_day(days_ago):
     cmd = ("git shortlog -es --before='@{%d days ago}' "
             "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
@@ -43,7 +45,7 @@ def get_data():
     first commit to the repo, and the last element is the list of committers from
     yesterday.
     '''
-    max_days = get_max_days_ago()
+    max_days = MAX_DAYS_AGO
     data = []
     while max_days >= 0:
         authors_for_day = get_one_day(max_days)
@@ -105,20 +107,22 @@ def make_graph(contribs_by_days_ago):
             dactive.append(0)
 
 
-    xs = range(len(contribs_by_days_ago)-1, -1, -1)
+    days_ago = len(contribs_by_days_ago) - 1
+    xs = range(days_ago, -1, -1)
 
     lens = map(len, [totals, actives, dtotal, dactive, xs])
-    assert len(set(lens)) == 1
+    assert len(set(lens)) == 1, lens
 
-    lookback = 6000
+    lookback = days_ago
     pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
                 label="Active contributors", drawstyle="steps")
-    #pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
-    #            label="Total contributors", drawstyle="steps")
+    pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
+               label="Total contributors", drawstyle="steps")
     pyplot.title('Active contributors')
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
+    pyplot.autoscale(enable=True, axis='x', tight=True)
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
@@ -137,6 +141,7 @@ def make_graph(contribs_by_days_ago):
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Change in contributors')
     pyplot.legend(loc='upper left')
+    pyplot.autoscale(enable=True, axis='x', tight=True)
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
