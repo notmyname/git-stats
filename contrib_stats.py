@@ -202,6 +202,8 @@ try:
         recent_data = get_data(days_ago)
         raw_data.extend(recent_data)
         save(raw_data, FILENAME)
+    else:
+        print 'Data file (%s) is up to date.' % FILENAME
 except (IOError, ValueError):
     raw_data = get_data(MAX_DAYS_AGO)
     save(raw_data, FILENAME)
