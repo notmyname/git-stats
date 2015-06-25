@@ -107,20 +107,28 @@ def make_graph(contribs_by_days_ago):
     actives = []
     dtotal = []
     dactive = []
-    active_set_of_contribs = set()
-    count_by_contribs = {}
+    active_window = 30  # number of days a contributor stays "active"
+    contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
+    rs = RollingSet(active_window)
     for date, c in contribs_by_days_ago:
-        for contrib in c:
-            count = count_by_contribs.get(contrib, 0)
-            count_by_contribs[contrib] = count + 1
-    for contrib, count in count_by_contribs.items():
-        if count > 1:  # exclude people with this many or less commits
-            active_set_of_contribs.add(contrib)
-    rs = RollingSet(30)  # number of days a contributor stays "active"
-    for date, c in contribs_by_days_ago:
-        for person in c.copy():
-            if person not in active_set_of_contribs:
-                c.remove(person)
+        end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
+            datetime.timedelta(days=active_window)
+        date = str(date)
+        end_window = str(end_window.strftime('%Y-%m-%d'))
+        for person in c:
+            if person not in contributor_activity:
+                contributor_activity[person] = [(date, end_window)]
+            else:
+                last_range = contributor_activity[person][-1]
+                if datetime.datetime.strptime(date, '%Y-%m-%d') < \
+                        datetime.datetime.strptime(last_range[1], '%Y-%m-%d'):
+                    # we're still in the person's current active range
+                    new_range = (last_range[0], end_window)
+                    contributor_activity[person].pop()
+                else:
+                    # old range ended, make a new one
+                    new_range = (date, end_window)
+                contributor_activity[person].append(new_range)
         all_contribs |= c
         totals.append(len(all_contribs))
         rs.add(c)
@@ -131,6 +139,9 @@ def make_graph(contribs_by_days_ago):
         except:
             dtotal.append(0)
             dactive.append(0)
+
+    # for person, date_ranges in contributor_activity.items():
+    #     print person, ', '.join('%s %s' % (s, e) for (s, e) in date_ranges)
 
 
     days_ago = len(contribs_by_days_ago) - 1
