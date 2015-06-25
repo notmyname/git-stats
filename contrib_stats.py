@@ -24,6 +24,12 @@ def get_max_days_ago():
     return delta.days
 
 MAX_DAYS_AGO = get_max_days_ago()
+FILENAME = 'contrib_stats.data'
+
+excluded_authors = (
+    'Jenkins <jenkins@review.openstack.org>',
+    'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
+)
 
 def get_one_day(days_ago):
     cmd = ("git shortlog -es --before='@{%d days ago}' "
@@ -35,28 +41,26 @@ def get_one_day(days_ago):
         if line:
             match = re.match(r'\d+\s+(.*)', line)
             author = match.group(1)
-            if author != 'Jenkins <jenkins@review.openstack.org>':
+            if author not in excluded_authors:
                 authors.add(author)
     return authors
 
-def get_data():
+def get_data(max_days):
     '''
     returns a list of sets. the first element is the list of committers from the
     first commit to the repo, and the last element is the list of committers from
     yesterday.
     '''
-    max_days = MAX_DAYS_AGO
     data = []
     while max_days >= 0:
+        that_date = datetime.datetime.now() - datetime.timedelta(days=max_days)
+        that_date = that_date.strftime('%Y-%m-%d')
         authors_for_day = get_one_day(max_days)
-        data.append(authors_for_day)
+        data.append((that_date, authors_for_day))
         max_days -= 1
         if max_days % 20 == 0:
             print '%d days left...' % max_days
     return data
-
-def contribs_in_range(contrib_lists):
-    return reduce(operator.ior, contrib_lists, set())
 
 class WindowQueue(object):
     def __init__(self, window_size):
@@ -87,6 +91,16 @@ class RollingSet(object):
     def __len__(self):
         return len(self.all_els)
 
+
+def save(raw_data, filename):
+    with open(filename, 'wb') as f:
+        json.dump([(d, list(e)) for (d, e) in raw_data], f)
+
+def load(filename):
+    with open(filename, 'rb') as f:
+        raw_data = [(d, set(e)) for (d, e) in json.load(f)]
+    return raw_data
+
 def make_graph(contribs_by_days_ago):
     all_contribs = set()
     totals = []
@@ -94,7 +108,7 @@ def make_graph(contribs_by_days_ago):
     dtotal = []
     dactive = []
     rs = RollingSet(30)  # number of days a contributor stays "active"
-    for c in contribs_by_days_ago:
+    for date, c in contribs_by_days_ago:
         all_contribs |= c
         totals.append(len(all_contribs))
         rs.add(c)
@@ -146,7 +160,7 @@ def make_graph(contribs_by_days_ago):
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    lookback = 180
+    lookback = 365
     pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
                 color='blue', label="Active contributors", drawstyle="steps")
     pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
@@ -164,15 +178,19 @@ def make_graph(contribs_by_days_ago):
     fig.set_frameon(True)
     fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
 
-
-filename = 'contrib_stats.data'
-
 try:
-    with open(filename, 'rb') as f:
-        raw_data = [set(e) for e in json.load(f)]
+    raw_data = load(FILENAME)
+    # update the data first
+    most_recent_date = raw_data[-1][0]
+    days_ago = (datetime.datetime.now() - \
+        datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
+    if days_ago > 0:
+        print 'Updating previous data with %d days...' % days_ago
+        recent_data = get_data(days_ago)
+        raw_data.extend(recent_data)
+        save(raw_data, FILENAME)
 except (IOError, ValueError):
-    raw_data = get_data()
-    with open(filename, 'wb') as f:
-        json.dump([list(e) for e in raw_data], f)
+    raw_data = get_data(MAX_DAYS_AGO)
+    save(raw_data, FILENAME)
 
 make_graph(raw_data)
