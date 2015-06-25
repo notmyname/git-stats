@@ -107,8 +107,20 @@ def make_graph(contribs_by_days_ago):
     actives = []
     dtotal = []
     dactive = []
+    active_set_of_contribs = set()
+    count_by_contribs = {}
+    for date, c in contribs_by_days_ago:
+        for contrib in c:
+            count = count_by_contribs.get(contrib, 0)
+            count_by_contribs[contrib] = count + 1
+    for contrib, count in count_by_contribs.items():
+        if count > 1:  # exclude people with this many or less commits
+            active_set_of_contribs.add(contrib)
     rs = RollingSet(30)  # number of days a contributor stays "active"
     for date, c in contribs_by_days_ago:
+        for person in c.copy():
+            if person not in active_set_of_contribs:
+                c.remove(person)
         all_contribs |= c
         totals.append(len(all_contribs))
         rs.add(c)
@@ -127,10 +139,11 @@ def make_graph(contribs_by_days_ago):
     lens = map(len, [totals, actives, dtotal, dactive, xs])
     assert len(set(lens)) == 1, lens
 
+    title_date = datetime.datetime.now().date()
     lookback = days_ago
     pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
                 label="Active contributors", drawstyle="steps")
-    pyplot.title('Active contributors')
+    pyplot.title('Active contributors (on %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
@@ -146,7 +159,7 @@ def make_graph(contribs_by_days_ago):
 
     pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
                label="Total contributors", drawstyle="steps")
-    pyplot.title('Active contributors')
+    pyplot.title('Total contributors (on %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
@@ -165,7 +178,7 @@ def make_graph(contribs_by_days_ago):
                 color='blue', label="Active contributors", drawstyle="steps")
     pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
                 color='red', label="Total contributors", drawstyle="steps")
-    pyplot.title('Change in contributors over time')
+    pyplot.title('Change in contributors over time (on %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Change in contributors')
     pyplot.legend(loc='upper left')
