@@ -41,6 +41,7 @@ def get_one_day(days_ago):
         if line:
             match = re.match(r'\d+\s+(.*)', line)
             author = match.group(1)
+            author = author.decode('utf8')
             if author not in excluded_authors:
                 authors.add(author)
     return authors
@@ -142,16 +143,22 @@ def make_graph(contribs_by_days_ago):
 
     max_contrib_runs = []
     for person, date_ranges in contributor_activity.items():
-        # print person, ', '.join('%s %s' % (s, e) for (s, e) in date_ranges)
+        line_out = [person.encode('utf8')]
+        for s, e in date_ranges:
+            line_out.append('%s %s' % (s, e))
+        # print ','.join(line_out)
         max_run = 0
+        max_run_stop_date = None
         for run in date_ranges:
             contrib_run = (
                 datetime.datetime.strptime(run[1], '%Y-%m-%d') -
                 datetime.datetime.strptime(run[0], '%Y-%m-%d')).days
-            max_run = max(max_run, contrib_run)
-        max_contrib_runs.append((max_run, person.encode('utf8')))
+            if contrib_run > max_run:
+                max_run = contrib_run
+                max_run_stop_date = run[1]
+        max_contrib_runs.append((max_run, person, max_run_stop_date))
     max_contrib_runs.sort(reverse=True)
-    print '\n'.join('%s: %s' % (p, c) for (c, p) in max_contrib_runs[:25])
+    print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
 
 
     days_ago = len(contribs_by_days_ago) - 1
