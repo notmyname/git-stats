@@ -140,8 +140,18 @@ def make_graph(contribs_by_days_ago):
             dtotal.append(0)
             dactive.append(0)
 
-    # for person, date_ranges in contributor_activity.items():
-    #     print person, ', '.join('%s %s' % (s, e) for (s, e) in date_ranges)
+    max_contrib_runs = []
+    for person, date_ranges in contributor_activity.items():
+        # print person, ', '.join('%s %s' % (s, e) for (s, e) in date_ranges)
+        max_run = 0
+        for run in date_ranges:
+            contrib_run = (
+                datetime.datetime.strptime(run[1], '%Y-%m-%d') -
+                datetime.datetime.strptime(run[0], '%Y-%m-%d')).days
+            max_run = max(max_run, contrib_run)
+        max_contrib_runs.append((max_run, person.encode('utf8')))
+    max_contrib_runs.sort(reverse=True)
+    print '\n'.join('%s: %s' % (p, c) for (c, p) in max_contrib_runs[:25])
 
 
     days_ago = len(contribs_by_days_ago) - 1
