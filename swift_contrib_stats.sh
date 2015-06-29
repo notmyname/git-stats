@@ -3,13 +3,13 @@
 ORIGPWD=`pwd`
 SWIFTDIR="$HOME/Documents/swift"
 
-mv ${ORIGPWD}/swift_contrib_stats.data ${SWIFTDIR}/contrib_stats.data 2>/dev/null
+mv ${ORIGPWD}/contrib_stats.data ${SWIFTDIR}/contrib_stats.data 2>/dev/null
 
 cd ${SWIFTDIR}
-python "$ORIGPWD"/contrib_stats.py
-mv ${SWIFTDIR}/active_contribs.png ${ORIGPWD}/swift_active_contribs.png
-mv ${SWIFTDIR}/total_contribs.png ${ORIGPWD}/swift_total_contribs.png
-mv ${SWIFTDIR}/contrib_deltas.png ${ORIGPWD}/swift_contrib_deltas.png
-mv ${SWIFTDIR}/contrib_activity.png ${ORIGPWD}/swift_contrib_activity.png
-mv ${SWIFTDIR}/contrib_stats.data ${ORIGPWD}/swift_contrib_stats.data
+python "$ORIGPWD"/contrib_stats.py $@
+mv ${SWIFTDIR}/active_contribs.png ${ORIGPWD}/active_contribs.png
+mv ${SWIFTDIR}/total_contribs.png ${ORIGPWD}/total_contribs.png
+mv ${SWIFTDIR}/contrib_deltas.png ${ORIGPWD}/contrib_deltas.png
+mv ${SWIFTDIR}/contrib_activity.png ${ORIGPWD}/contrib_activity.png
+mv ${SWIFTDIR}/contrib_stats.data ${ORIGPWD}/contrib_stats.data
 cd ${ORIGPWD}

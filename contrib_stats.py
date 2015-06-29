@@ -3,6 +3,7 @@ import subprocess
 import datetime
 import re
 import operator
+import sys
 
 from numpy import arange
 from matplotlib import pyplot
@@ -12,7 +13,6 @@ from matplotlib import pyplot
 # TODO: figure out churn
 # TODO: how long do patches stay in review (first proposal to merge time)
 
-# separate active and total graphs
 # reduce to: Are active contribs going up or down?
 # do above for day, week, month, year
 
@@ -126,13 +126,12 @@ def make_one_range_plot_values(all_ranges, yval, all_x_vals):
             new_x_vals.append(None)
     return new_x_vals
 
-def make_graph(contribs_by_days_ago):
+def make_graph(contribs_by_days_ago, active_window=14):
     all_contribs = set()
     totals = []
     actives = []
     dtotal = []
     dactive = []
-    active_window = 14  # number of days a contributor stays "active"
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
     contrib_activity_days = {}
     rs = RollingSet(active_window)
@@ -272,22 +271,33 @@ def make_graph(contribs_by_days_ago):
     pyplot.close()
 
 
-
-try:
-    raw_data = load(FILENAME)
-    # update the data first
-    most_recent_date = raw_data[-1][0]
-    days_ago = (datetime.datetime.now() - \
-        datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
-    if days_ago < MIN_DAYS_AGO:  ## is this right?
-        print 'Updating previous data with %d days...' % days_ago
-        recent_data = get_data(days_ago, MIN_DAYS_AGO)
-        raw_data.extend(recent_data)
+if __name__ == '__main__':
+    try:
+        raw_data = load(FILENAME)
+        # update the data first
+        most_recent_date = raw_data[-1][0]
+        days_ago = (datetime.datetime.now() - \
+            datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
+        if days_ago < MIN_DAYS_AGO:  ## is this right?
+            print 'Updating previous data with %d days...' % days_ago
+            recent_data = get_data(days_ago, MIN_DAYS_AGO)
+            raw_data.extend(recent_data)
+            save(raw_data, FILENAME)
+        else:
+            print 'Data file (%s) is up to date.' % FILENAME
+    except (IOError, ValueError):
+        raw_data = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
         save(raw_data, FILENAME)
-    else:
-        print 'Data file (%s) is up to date.' % FILENAME
-except (IOError, ValueError):
-    raw_data = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
-    save(raw_data, FILENAME)
 
-make_graph(raw_data)
+    aw = 14
+    try:
+        aw = sys.argv[1]
+        try:
+            aw = int(aw)
+        except ValueError:
+            print 'bad active window given (%s). defaulting to 14' % aw
+    except IndexError:
+        aw = 14
+
+    print 'Using activity window of %d' % aw
+    make_graph(raw_data, aw)  
