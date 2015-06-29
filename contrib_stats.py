@@ -132,7 +132,7 @@ def make_graph(contribs_by_days_ago):
     actives = []
     dtotal = []
     dactive = []
-    active_window = 30  # number of days a contributor stays "active"
+    active_window = 14  # number of days a contributor stays "active"
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
     contrib_activity_days = {}
     rs = RollingSet(active_window)
@@ -177,32 +177,37 @@ def make_graph(contribs_by_days_ago):
             dactive.append(0)
 
     # find the people with the longest continuous contrib run
-    max_contrib_runs = []
-    for person, date_ranges in contributor_activity.items():
-        line_out = [person.encode('utf8')]
-        for s, e in date_ranges:
-            line_out.append('%s %s' % (s, e))
-        # print ','.join(line_out)
-        max_run = 0
-        max_run_stop_date = None
-        for run in date_ranges:
-            contrib_run = (
-                datetime.datetime.strptime(run[1], '%Y-%m-%d') -
-                datetime.datetime.strptime(run[0], '%Y-%m-%d')).days
-            if contrib_run > max_run:
-                max_run = contrib_run
-                max_run_stop_date = run[1]
-        max_contrib_runs.append((max_run, person, max_run_stop_date))
-    max_contrib_runs.sort(reverse=True)
+    # max_contrib_runs = []
+    # for person, date_ranges in contributor_activity.items():
+    #     line_out = [person.encode('utf8')]
+    #     for s, e in date_ranges:
+    #         line_out.append('%s %s' % (s, e))
+    #     # print ','.join(line_out)
+    #     max_run = 0
+    #     max_run_stop_date = None
+    #     for run in date_ranges:
+    #         contrib_run = (
+    #             datetime.datetime.strptime(run[1], '%Y-%m-%d') -
+    #             datetime.datetime.strptime(run[0], '%Y-%m-%d')).days
+    #         if contrib_run > max_run:
+    #             max_run = contrib_run
+    #             max_run_stop_date = run[1]
+    #     max_contrib_runs.append((max_run, person, max_run_stop_date))
+    # max_contrib_runs.sort(reverse=True)
     # print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
 
 
     # get graphable ranges for each person
     graphable_ranges = {}
+    order = []
     total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     for person, days_ago_ranges in contrib_activity_days.items():
-        # if person not in [x[1] for x in max_contrib_runs[:50]]:
-            # continue
+        new_data = make_one_range_plot_values(days_ago_ranges, 1,
+                                              total_x_values)
+        order.append((new_data.count(None), person))
+    order.sort(reverse=True)
+    for _junk, person in order:
+        days_ago_ranges = contrib_activity_days[person]
         yval = len(graphable_ranges)
         new_data = make_one_range_plot_values(days_ago_ranges, yval,
                                               total_x_values)
@@ -266,18 +271,17 @@ def make_graph(contribs_by_days_ago):
     fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    lookback = MAX_DAYS_AGO
     xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         persons.append((i, person.split('<', 1)[0].strip()))
         pyplot.plot(xs, person_days, '-',
-                    label=person, linewidth=10, solid_capstyle="butt", alpha=0.6)
+                    label=person, linewidth=10, solid_capstyle="butt")
     pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
     persons.sort()
-    pyplot.yticks([p[0] for p in persons], [p[1] for p in persons]) # rotation=45
+    pyplot.yticks([p[0] for p in persons], [p[1] for p in persons])
     pyplot.autoscale(enable=True, axis='both', tight=True)
     ax = pyplot.gca()
     ax.invert_xaxis()
@@ -287,6 +291,8 @@ def make_graph(contribs_by_days_ago):
     fig.set_frameon(False)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
+
+
 
 try:
     raw_data = load(FILENAME)
