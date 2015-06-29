@@ -182,19 +182,19 @@ def make_graph(contribs_by_days_ago):
                 max_run_stop_date = run[1]
         max_contrib_runs.append((max_run, person, max_run_stop_date))
     max_contrib_runs.sort(reverse=True)
-    print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
+    # print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
 
 
     # get graphable ranges for each person
-    graphable_ranges = []
+    graphable_ranges = {}
     total_x_values = range(MAX_DAYS_AGO, -active_window, -1)
     for person, days_ago_ranges in contrib_activity_days.items():
+        # if person not in [x[1] for x in max_contrib_runs[:50]]:
+            # continue
         yval = len(graphable_ranges)
         new_data = make_one_range_plot_values(days_ago_ranges, yval,
                                               total_x_values)
-        new_data.insert(0, person)
-        graphable_ranges.append(new_data)
-
+        graphable_ranges[person] = (yval, new_data)
 
     days_ago = len(contribs_by_days_ago) - 1
     xs = range(days_ago, -1, -1)
@@ -258,22 +258,22 @@ def make_graph(contribs_by_days_ago):
     lookback = MAX_DAYS_AGO
     xs = range(days_ago, -active_window, -1)
     persons = []
-    for person_days in graphable_ranges:
-        person = person_days.pop(0)
-        persons.append(person)
+    for person, (i, person_days) in graphable_ranges.items():
+        persons.append((i, person.split('<', 1)[0].strip()))
         pyplot.plot(xs, person_days, '-',
-                    label=person, linewidth=10, solid_capstyle="round", alpha=0.6)
+                    label=person, linewidth=10, solid_capstyle="butt", alpha=0.6)
     pyplot.title('Contributor Actvity (on %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
-    pyplot.yticks(arange(len(persons)), persons) # rotation=45
+    persons.sort()
+    pyplot.yticks([p[0] for p in persons], [p[1] for p in persons]) # rotation=45
     pyplot.autoscale(enable=True, axis='both', tight=True)
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
-    fig.set_size_inches(16, 16)
-    fig.dpi = 400
-    fig.set_frameon(True)
+    fig.set_size_inches(32, 50)
+    fig.dpi = 200
+    fig.set_frameon(False)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
