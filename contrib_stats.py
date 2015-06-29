@@ -176,27 +176,6 @@ def make_graph(contribs_by_days_ago):
             dtotal.append(0)
             dactive.append(0)
 
-    # find the people with the longest continuous contrib run
-    # max_contrib_runs = []
-    # for person, date_ranges in contributor_activity.items():
-    #     line_out = [person.encode('utf8')]
-    #     for s, e in date_ranges:
-    #         line_out.append('%s %s' % (s, e))
-    #     # print ','.join(line_out)
-    #     max_run = 0
-    #     max_run_stop_date = None
-    #     for run in date_ranges:
-    #         contrib_run = (
-    #             datetime.datetime.strptime(run[1], '%Y-%m-%d') -
-    #             datetime.datetime.strptime(run[0], '%Y-%m-%d')).days
-    #         if contrib_run > max_run:
-    #             max_run = contrib_run
-    #             max_run_stop_date = run[1]
-    #     max_contrib_runs.append((max_run, person, max_run_stop_date))
-    # max_contrib_runs.sort(reverse=True)
-    # print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
-
-
     # get graphable ranges for each person
     graphable_ranges = {}
     order = []
