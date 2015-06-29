@@ -4,6 +4,7 @@ import datetime
 import re
 import operator
 
+from numpy import arange
 from matplotlib import pyplot
 
 # TODO: track contributor half-life
@@ -102,6 +103,17 @@ def load(filename):
         raw_data = [(d, set(e)) for (d, e) in json.load(f)]
     return raw_data
 
+def make_one_range_plot_values(all_ranges, yval, all_x_vals):
+    new_x_vals = []
+    for x_val in all_x_vals:
+        for run in all_ranges:
+            if x_val in range(min(run), max(run)):
+                new_x_vals.append(yval)
+                break
+        else:
+            new_x_vals.append(None)
+    return new_x_vals
+
 def make_graph(contribs_by_days_ago):
     all_contribs = set()
     totals = []
@@ -110,26 +122,37 @@ def make_graph(contribs_by_days_ago):
     dactive = []
     active_window = 30  # number of days a contributor stays "active"
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
+    contrib_activity_days = {}
     rs = RollingSet(active_window)
     for date, c in contribs_by_days_ago:
         end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
             datetime.timedelta(days=active_window)
+        end_window_days = (datetime.datetime.now() - end_window).days
+        start_date_days = (datetime.datetime.now() -
+                           datetime.datetime.strptime(date, '%Y-%m-%d')).days
         date = str(date)
         end_window = str(end_window.strftime('%Y-%m-%d'))
         for person in c:
             if person not in contributor_activity:
                 contributor_activity[person] = [(date, end_window)]
+                contrib_activity_days[person] = [(start_date_days,
+                                                  end_window_days)]
             else:
                 last_range = contributor_activity[person][-1]
                 if datetime.datetime.strptime(date, '%Y-%m-%d') < \
                         datetime.datetime.strptime(last_range[1], '%Y-%m-%d'):
                     # we're still in the person's current active range
                     new_range = (last_range[0], end_window)
+                    new_range_days = (contrib_activity_days[person][-1][0],
+                                      end_window_days)
                     contributor_activity[person].pop()
+                    contrib_activity_days[person].pop()
                 else:
                     # old range ended, make a new one
                     new_range = (date, end_window)
+                    new_range_days = (start_date_days, end_window_days)
                 contributor_activity[person].append(new_range)
+                contrib_activity_days[person].append(new_range_days)
         all_contribs |= c
         totals.append(len(all_contribs))
         rs.add(c)
@@ -141,6 +164,7 @@ def make_graph(contribs_by_days_ago):
             dtotal.append(0)
             dactive.append(0)
 
+    # find the people with the longest continuous contrib run
     max_contrib_runs = []
     for person, date_ranges in contributor_activity.items():
         line_out = [person.encode('utf8')]
@@ -159,6 +183,17 @@ def make_graph(contribs_by_days_ago):
         max_contrib_runs.append((max_run, person, max_run_stop_date))
     max_contrib_runs.sort(reverse=True)
     print '\n'.join('%s: %s (%s)' % (p, c, d) for (c, p, d) in max_contrib_runs[:10])
+
+
+    # get graphable ranges for each person
+    graphable_ranges = []
+    total_x_values = range(MAX_DAYS_AGO, -active_window, -1)
+    for person, days_ago_ranges in contrib_activity_days.items():
+        yval = len(graphable_ranges)
+        new_data = make_one_range_plot_values(days_ago_ranges, yval,
+                                              total_x_values)
+        new_data.insert(0, person)
+        graphable_ranges.append(new_data)
 
 
     days_ago = len(contribs_by_days_ago) - 1
@@ -218,6 +253,29 @@ def make_graph(contribs_by_days_ago):
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
+    lookback = MAX_DAYS_AGO
+    xs = range(days_ago, -active_window, -1)
+    persons = []
+    for person_days in graphable_ranges:
+        person = person_days.pop(0)
+        persons.append(person)
+        pyplot.plot(xs, person_days, '-',
+                    label=person, linewidth=10, solid_capstyle="round", alpha=0.6)
+    pyplot.title('Contributor Actvity (on %s)' % title_date)
+    pyplot.xlabel('Days Ago')
+    pyplot.ylabel('Contributor')
+    pyplot.yticks(arange(len(persons)), persons) # rotation=45
+    pyplot.autoscale(enable=True, axis='both', tight=True)
+    ax = pyplot.gca()
+    ax.invert_xaxis()
+    fig = pyplot.gcf()
+    fig.set_size_inches(16, 16)
+    fig.dpi = 400
+    fig.set_frameon(True)
+    fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
 
 try:
     raw_data = load(FILENAME)
