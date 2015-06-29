@@ -24,7 +24,16 @@ def get_max_days_ago():
     delta = datetime.datetime.now() - date
     return delta.days
 
+def get_min_days_ago():
+    newest_date = subprocess.check_output(
+        'git log --format="%ad" --date=short | head -1', shell=True)
+    newest_date = newest_date.strip()
+    date = datetime.datetime.strptime(newest_date, '%Y-%m-%d')
+    delta = datetime.datetime.now() - date
+    return delta.days
+
 MAX_DAYS_AGO = get_max_days_ago()
+MIN_DAYS_AGO = get_min_days_ago()
 FILENAME = 'contrib_stats.data'
 
 excluded_authors = (
@@ -47,7 +56,7 @@ def get_one_day(days_ago):
                 authors.add(author)
     return authors
 
-def get_data(max_days):
+def get_data(max_days, min_days):
     '''
     returns a list of sets. the first element is the list of committers from the
     first commit to the repo, and the last element is the list of committers from
@@ -55,6 +64,9 @@ def get_data(max_days):
     '''
     data = []
     while max_days >= 0:
+        if max_days <= min_days:
+            print 'No newer data in VCS'
+            break
         that_date = datetime.datetime.now() - datetime.timedelta(days=max_days)
         that_date = that_date.strftime('%Y-%m-%d')
         authors_for_day = get_one_day(max_days)
@@ -187,7 +199,7 @@ def make_graph(contribs_by_days_ago):
 
     # get graphable ranges for each person
     graphable_ranges = {}
-    total_x_values = range(MAX_DAYS_AGO, -active_window, -1)
+    total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     for person, days_ago_ranges in contrib_activity_days.items():
         # if person not in [x[1] for x in max_contrib_runs[:50]]:
             # continue
@@ -196,17 +208,16 @@ def make_graph(contribs_by_days_ago):
                                               total_x_values)
         graphable_ranges[person] = (yval, new_data)
 
-    days_ago = len(contribs_by_days_ago) - 1
-    xs = range(days_ago, -1, -1)
+    xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
 
     lens = map(len, [totals, actives, dtotal, dactive, xs])
     assert len(set(lens)) == 1, lens
 
-    title_date = datetime.datetime.now().date()
-    lookback = days_ago
+    title_date = (datetime.datetime.now() - datetime.timedelta(days=MIN_DAYS_AGO)).date()
+    lookback = MAX_DAYS_AGO
     pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
                 label="Active contributors", drawstyle="steps")
-    pyplot.title('Active contributors (on %s)' % title_date)
+    pyplot.title('Active contributors (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
@@ -222,7 +233,7 @@ def make_graph(contribs_by_days_ago):
 
     pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
                label="Total contributors", drawstyle="steps")
-    pyplot.title('Total contributors (on %s)' % title_date)
+    pyplot.title('Total contributors (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
@@ -241,7 +252,7 @@ def make_graph(contribs_by_days_ago):
                 color='blue', label="Active contributors", drawstyle="steps")
     pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
                 color='red', label="Total contributors", drawstyle="steps")
-    pyplot.title('Change in contributors over time (on %s)' % title_date)
+    pyplot.title('Change in contributors over time (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Change in contributors')
     pyplot.legend(loc='upper left')
@@ -256,13 +267,13 @@ def make_graph(contribs_by_days_ago):
     pyplot.close()
 
     lookback = MAX_DAYS_AGO
-    xs = range(days_ago, -active_window, -1)
+    xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         persons.append((i, person.split('<', 1)[0].strip()))
         pyplot.plot(xs, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt", alpha=0.6)
-    pyplot.title('Contributor Actvity (on %s)' % title_date)
+    pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
     persons.sort()
@@ -283,15 +294,15 @@ try:
     most_recent_date = raw_data[-1][0]
     days_ago = (datetime.datetime.now() - \
         datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
-    if days_ago > 0:
+    if days_ago < MIN_DAYS_AGO:  ## is this right?
         print 'Updating previous data with %d days...' % days_ago
-        recent_data = get_data(days_ago)
+        recent_data = get_data(days_ago, MIN_DAYS_AGO)
         raw_data.extend(recent_data)
         save(raw_data, FILENAME)
     else:
         print 'Data file (%s) is up to date.' % FILENAME
 except (IOError, ValueError):
-    raw_data = get_data(MAX_DAYS_AGO)
+    raw_data = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
     save(raw_data, FILENAME)
 
 make_graph(raw_data)
