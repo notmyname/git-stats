@@ -182,8 +182,8 @@ def make_graph(contribs_by_days_ago, active_window=14):
     for person, days_ago_ranges in contrib_activity_days.items():
         new_data = make_one_range_plot_values(days_ago_ranges, 1,
                                               total_x_values)
-        order.append((new_data.count(None), person))
-    order.sort(reverse=True)
+        order.append((new_data, person))
+    order.sort()
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
         yval = len(graphable_ranges)
@@ -268,8 +268,8 @@ def make_graph(contribs_by_days_ago, active_window=14):
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
-    fig.set_size_inches(32, 50)
     fig.dpi = 200
+    fig.set_size_inches(32, 50)
     fig.set_frameon(False)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
