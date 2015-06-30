@@ -16,24 +16,23 @@ from matplotlib import pyplot
 # reduce to: Are active contribs going up or down?
 # do above for day, week, month, year
 
-def get_max_days_ago():
-    oldest_date = subprocess.check_output(
-        'git log --reverse --format="%ad" --date=short | head -1', shell=True)
-    oldest_date = oldest_date.strip()
-    date = datetime.datetime.strptime(oldest_date, '%Y-%m-%d')
-    delta = datetime.datetime.now() - date
-    return delta.days
+def get_max_min_days_ago():
+    all_dates = subprocess.check_output(
+        'git log --reverse --format="%ad" --date=short', shell=True)
+    now = datetime.datetime.now()
+    oldest_date = now
+    newest_date = datetime.datetime.strptime('1970-01-01', '%Y-%m-%d')
+    for date in all_dates.split():
+        date = datetime.datetime.strptime(date.strip(), '%Y-%m-%d')
+        if date < oldest_date:
+            oldest_date = date
+        elif date > newest_date:
+            newest_date = date
+    oldest = now - oldest_date
+    newest = now - newest_date
+    return oldest.days, newest.days
 
-def get_min_days_ago():
-    newest_date = subprocess.check_output(
-        'git log --format="%ad" --date=short | head -1', shell=True)
-    newest_date = newest_date.strip()
-    date = datetime.datetime.strptime(newest_date, '%Y-%m-%d')
-    delta = datetime.datetime.now() - date
-    return delta.days
-
-MAX_DAYS_AGO = get_max_days_ago()
-MIN_DAYS_AGO = get_min_days_ago()
+MAX_DAYS_AGO, MIN_DAYS_AGO = get_max_min_days_ago()
 FILENAME = 'contrib_stats.data'
 
 excluded_authors = (
@@ -249,11 +248,10 @@ def make_graph(contribs_by_days_ago, active_window=14):
     fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         persons.append((i, person.split('<', 1)[0].strip()))
-        pyplot.plot(xs, person_days, '-',
+        pyplot.plot(total_x_values, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt")
     pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
