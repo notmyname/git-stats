@@ -133,6 +133,11 @@ def make_graph(contribs_by_days_ago, active_window=14):
     dactive = []
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
     contrib_activity_days = {}
+    rolling_sets = {}
+    active_sets = {}
+    for window in (14, 60, 365):
+        rolling_sets[window] = RollingSet(window)
+        active_sets[window] = []
     rs = RollingSet(active_window)
     for date, c in contribs_by_days_ago:
         end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
@@ -167,6 +172,9 @@ def make_graph(contribs_by_days_ago, active_window=14):
         totals.append(len(all_contribs))
         rs.add(c)
         actives.append(len(rs))
+        for window in rolling_sets:
+            rolling_sets[window].add(c)
+            active_sets[window].append(len(rolling_sets[window]))
         try:
             dtotal.append(totals[-1] - totals[-2])
             dactive.append(actives[-1] - actives[-2])
@@ -197,8 +205,12 @@ def make_graph(contribs_by_days_ago, active_window=14):
 
     title_date = (datetime.datetime.now() - datetime.timedelta(days=MIN_DAYS_AGO)).date()
     lookback = MAX_DAYS_AGO
-    pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
-                label="Active contributors", drawstyle="steps")
+    # pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
+    #             label="Active contributors", drawstyle="steps")
+    for window in active_sets:
+        pyplot.plot(xs[-lookback:], active_sets[window][-lookback:], '-',
+                    label="Active contributors (%s)" % window,
+                    drawstyle="steps")
     pyplot.title('Active contributors (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
