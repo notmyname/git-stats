@@ -132,7 +132,7 @@ def make_graph(contribs_by_days_ago, active_window=14):
     dtotal = []
     dactive = []
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
-    contrib_activity_days = {}
+    contrib_activity_days = {}  # contrib -> [(start_days_ago, end_days_ago), ...]
     rolling_sets = {}
     active_sets = {}
     for window in (14, 60, 365):
