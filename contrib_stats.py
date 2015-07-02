@@ -263,14 +263,19 @@ def make_graph(contribs_by_days_ago, active_window=14):
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         persons.append((i, person.split('<', 1)[0].strip()))
+        alpha = 1.0
+        foo = int((person_days.count(i) / float(active_window)) * 100)
+        if foo == 100:
+            alpha = 0.25
         pyplot.plot(total_x_values, person_days, '-',
-                    label=person, linewidth=10, solid_capstyle="butt")
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=alpha)
     pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
     persons.sort()
     pyplot.yticks([p[0] for p in persons], [p[1] for p in persons])
-    x_ticks = range(0, MAX_DAYS_AGO, 90)
+    x_ticks = range(0, MAX_DAYS_AGO, 60)
     pyplot.xticks(x_ticks, x_ticks)
     pyplot.grid(b=True, which='both', axis='both')
     pyplot.ylim(-1, persons[-1][0] + 1)
@@ -279,7 +284,11 @@ def make_graph(contribs_by_days_ago, active_window=14):
     ax.invert_xaxis()
     fig = pyplot.gcf()
     fig.dpi = 200
-    fig.set_size_inches(32, 50)
+    vertical_size_per_person = 0.25
+    vertical_size = vertical_size_per_person * len(persons)
+    horizontal_size_per_day = 0.02
+    horizontal_size = horizontal_size_per_day * len(total_x_values)
+    fig.set_size_inches(horizontal_size, vertical_size)
     fig.set_frameon(False)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
@@ -289,7 +298,7 @@ if __name__ == '__main__':
     try:
         raw_data = load(FILENAME)
         # update the data first
-        most_recent_date = raw_data[-1][0]
+        most_recent_date = max(x[0] for x in raw_data)
         days_ago = (datetime.datetime.now() - \
             datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
         if days_ago > MIN_DAYS_AGO:
