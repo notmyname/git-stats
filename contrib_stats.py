@@ -292,7 +292,7 @@ if __name__ == '__main__':
         most_recent_date = raw_data[-1][0]
         days_ago = (datetime.datetime.now() - \
             datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
-        if days_ago < MIN_DAYS_AGO:  ## is this right?
+        if days_ago > MIN_DAYS_AGO:
             print 'Updating previous data with %d days...' % days_ago
             recent_data = get_data(days_ago, MIN_DAYS_AGO)
             raw_data.extend(recent_data)
