@@ -4,6 +4,7 @@ import datetime
 import re
 import operator
 import sys
+from collections import defaultdict
 
 from numpy import arange
 from matplotlib import pyplot
@@ -13,8 +14,8 @@ from matplotlib import pyplot
 # TODO: figure out churn
 # TODO: how long do patches stay in review (first proposal to merge time)
 
-# reduce to: Are active contribs going up or down?
-# do above for day, week, month, year
+# TODO: rolling average for active count graph
+# TODO: (1) total active time (2) histogram of total active time
 
 def get_max_min_days_ago():
     all_dates = subprocess.check_output(
@@ -116,11 +117,16 @@ def load(filename):
 
 def make_one_range_plot_values(all_ranges, yval, all_x_vals):
     new_x_vals = []
+    global_start = min(x[1] for x in all_ranges)
+    global_end = max(x[0] for x in all_ranges)
+    global_range = range(global_start, global_end)
     for x_val in all_x_vals:
-        for run in all_ranges:
-            if x_val in range(min(run), max(run)):
-                new_x_vals.append(yval)
-                break
+        # for run in all_ranges:
+        #     if x_val in range(min(run), max(run)):
+        #         new_x_vals.append(yval)
+        #         break
+        if x_val in global_range:
+            new_x_vals.append(yval)
         else:
             new_x_vals.append(None)
     return new_x_vals
@@ -190,6 +196,12 @@ def make_graph(contribs_by_days_ago, active_window=14):
         new_data = make_one_range_plot_values(days_ago_ranges, 1,
                                               total_x_values)
         order.append((new_data, person))
+        # find who's at risk of falling out
+        count = new_data.count(1)
+        last_days_ago = days_ago_ranges[-1][-1]
+        if 30 <= last_days_ago < 180 and count > active_window:
+            m = '%s: last: %s (total days active: %s)' % (person, last_days_ago, count)
+            print m
     order.sort()
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
@@ -204,6 +216,8 @@ def make_graph(contribs_by_days_ago, active_window=14):
     assert len(set(lens)) == 1, lens
 
     title_date = (datetime.datetime.now() - datetime.timedelta(days=MIN_DAYS_AGO)).date()
+
+    # graph active contribs
     lookback = MAX_DAYS_AGO
     # pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
     #             label="Active contributors", drawstyle="steps")
@@ -225,6 +239,7 @@ def make_graph(contribs_by_days_ago, active_window=14):
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
+    # graph total contributors
     pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
                label="Total contributors", drawstyle="steps")
     pyplot.title('Total contributors (as of %s)' % title_date)
@@ -241,6 +256,7 @@ def make_graph(contribs_by_days_ago, active_window=14):
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
+    # graph deltas
     lookback = 365
     pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
                 color='blue', label="Active contributors", drawstyle="steps")
@@ -260,6 +276,7 @@ def make_graph(contribs_by_days_ago, active_window=14):
     fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
+    # graph contrib activity ranges
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         persons.append((i, person.split('<', 1)[0].strip()))
