@@ -10,12 +10,8 @@ from numpy import arange
 from matplotlib import pyplot
 
 # TODO: track contributor half-life
-# TODO: derivative of totals
-# TODO: figure out churn
 # TODO: how long do patches stay in review (first proposal to merge time)
-
-# TODO: rolling average for active count graph
-# TODO: (1) total active time (2) histogram of total active time
+# TODO: find how many one-off contributors we can support in one time block (map to review time?)
 
 def get_max_min_days_ago():
     all_dates = subprocess.check_output(
