@@ -209,10 +209,11 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         order.append((start_day, person))
         # find who's at risk of falling out
         last_days_ago = days_ago_ranges[-1][-1]
-        r = count / float(authors_by_count[person])
+        avg_days_active_per_patch = count / float(authors_by_count[person])
+        danger_metric = last_days_ago / avg_days_active_per_patch
         # at least one patch, active in the last 90 days, and it's been longer than normal since your last patch
-        if last_days_ago > r and authors_by_count[person] > 1 and last_days_ago < 180:
-            m = '%s: last: %s (total days active: %s, avg days per patch: %.2f)' % (person, last_days_ago, count, r)
+        if authors_by_count[person] > 1 and 1.5 < danger_metric < 15.0:
+            m = '%s:\n\tlast active %s days ago (patches: %d, total days active: %s, avg activity per patch: %.2f, danger: %.2f)' % (person, last_days_ago, authors_by_count[person], count, avg_days_active_per_patch, danger_metric)
             print m
     # this needs work. it should count someone as one-time if they've only landed one patch up to that bucket point
     # print "Number of one-time contributors in a time bucket"
@@ -306,8 +307,8 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     for person, (i, person_days) in graphable_ranges.items():
         how_many_days = person_days.count(i)
         c = authors_by_count[person]
-        r = how_many_days / float(c)
-        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %.2f)' % (c, r)))
+        r = how_many_days / c
+        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %d)' % (c, r)))
         alpha = 1.0
         if authors_by_count[person] == 1:
             alpha = 0.5
@@ -315,8 +316,7 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         # since your first commit, how much of the life of the project have you been active?
         rcolor = int((min(how_many_days, days_since_first) / float(days_since_first)) * 0xff) - 1
         bcolor = 0x7f
-        # how much of the total life of the project have you been active?
-        gcolor = 0  # int((how_many_days / float(total_age)) * 0xff) - 1
+        gcolor = 0
         pyplot.plot(total_x_values, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt",
                     alpha=alpha, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
