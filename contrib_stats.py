@@ -120,20 +120,21 @@ def load(filename):
     return contribs_by_days_ago, authors_by_count
 
 def make_one_range_plot_values(all_ranges, yval, all_x_vals):
-    new_x_vals = []
     global_start = min(x[1] for x in all_ranges)
     global_end = max(x[0] for x in all_ranges)
     global_range = range(global_start, global_end)
-    for x_val in all_x_vals:
-        # for run in all_ranges:
-        #     if x_val in range(min(run), max(run)):
-        #         new_x_vals.append(yval)
-        #         break
+    cumulative_x_vals = [None] * len(all_x_vals)
+    sparse_x_vals = [None] * len(all_x_vals)
+    for i, x_val in enumerate(all_x_vals):
+        sparse_x_vals[i] = None
+        cumulative_x_vals[i] = None
+        for run in all_ranges:
+            if x_val in range(min(run), max(run)):
+                sparse_x_vals[i] = yval
+                break
         if x_val in global_range:
-            new_x_vals.append(yval)
-        else:
-            new_x_vals.append(None)
-    return new_x_vals
+            cumulative_x_vals[i] = yval
+    return cumulative_x_vals, sparse_x_vals
 
 def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     all_contribs = set()
@@ -198,10 +199,10 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     total_age = total_x_values[0] - total_x_values[-1]
     for person, days_ago_ranges in contrib_activity_days.items():
-        new_data = make_one_range_plot_values(days_ago_ranges, 1,
-                                              total_x_values)
-        start_day = new_data.index(1)
-        count = new_data.count(1)
+        cumulative_x_vals, sparse_x_vals = make_one_range_plot_values(
+            days_ago_ranges, 1, total_x_values)
+        start_day = cumulative_x_vals.index(1)
+        count = sparse_x_vals.count(1)
         if authors_by_count[person] == 1:
             single_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
         total_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
@@ -222,9 +223,9 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
         yval = len(graphable_ranges)
-        new_data = make_one_range_plot_values(days_ago_ranges, yval,
-                                              total_x_values)
-        graphable_ranges[person] = (yval, new_data)
+        cumulative_x_vals, sparse_x_vals = make_one_range_plot_values(
+            days_ago_ranges, yval, total_x_values)
+        graphable_ranges[person] = (yval, cumulative_x_vals)
 
     xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
 
@@ -312,8 +313,7 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
             alpha = 0.5
         days_since_first = total_age - person_days.index(i)
         # since your first commit, how much of the life of the project have you been active?
-        rcolor = int((how_many_days / float(days_since_first)) * 0xff) - 1
-
+        rcolor = int((min(how_many_days, days_since_first) / float(days_since_first)) * 0xff) - 1
         bcolor = 0x7f
         # how much of the total life of the project have you been active?
         gcolor = 0  # int((how_many_days / float(total_age)) * 0xff) - 1
