@@ -35,6 +35,7 @@ FILENAME = 'contrib_stats.data'
 excluded_authors = (
     'Jenkins <jenkins@review.openstack.org>',
     'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
+    'OpenStack Jenkins <jenkins@openstack.org>',
 )
 
 def get_one_day(days_ago):
@@ -212,13 +213,11 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         if last_days_ago > r and authors_by_count[person] > 1 and last_days_ago < 180:
             m = '%s: last: %s (total days active: %s, avg days per patch: %.2f)' % (person, last_days_ago, count, r)
             print m
-        # if last_days_ago> 180 and count > active_window:
-        #     m = '%s: last: %s (total days active: %s)' % (person, last_days_ago, count)
-        #     print m
-    print "Number of one-time contributors in a time bucket"
-    for b in total_contrib_count_by_bucket:
-        ratio = single_contrib_count_by_bucket[b] / float(total_contrib_count_by_bucket[b])
-        print '%d: %d, %d, %.2f' % (b*bucket_size, total_contrib_count_by_bucket[b], single_contrib_count_by_bucket[b], ratio)
+    # this needs work. it should count someone as one-time if they've only landed one patch up to that bucket point
+    # print "Number of one-time contributors in a time bucket"
+    # for b in total_contrib_count_by_bucket:
+    #     ratio = single_contrib_count_by_bucket[b] / float(total_contrib_count_by_bucket[b])
+    #     print '%d: %d, %d, %.2f' % (b*bucket_size, total_contrib_count_by_bucket[b], single_contrib_count_by_bucket[b], ratio)
     order.sort(reverse=True)
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
