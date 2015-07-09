@@ -42,6 +42,7 @@ def get_one_day(days_ago):
             "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
     out = subprocess.check_output(cmd, shell=True).strip()
     authors = set()
+    authors_by_count = defaultdict(int)
     for line in out.split('\n'):
         line = line.strip()
         if line:
@@ -50,7 +51,8 @@ def get_one_day(days_ago):
             author = author.decode('utf8')
             if author not in excluded_authors:
                 authors.add(author)
-    return authors
+            authors_by_count[author] += 1
+    return authors, authors_by_count
 
 def get_data(max_days, min_days):
     '''
@@ -59,18 +61,21 @@ def get_data(max_days, min_days):
     yesterday.
     '''
     data = []
+    authors_by_count = defaultdict(int)
     while max_days >= 0:
         if max_days <= min_days:
             print 'No newer data in VCS'
             break
         that_date = datetime.datetime.now() - datetime.timedelta(days=max_days)
         that_date = that_date.strftime('%Y-%m-%d')
-        authors_for_day = get_one_day(max_days)
+        authors_for_day, by_count = get_one_day(max_days)
+        for a, c in by_count.items():
+            authors_by_count[a] += c
         data.append((that_date, authors_for_day))
         max_days -= 1
         if max_days % 20 == 0:
             print '%d days left...' % max_days
-    return data
+    return data, authors_by_count
 
 class WindowQueue(object):
     def __init__(self, window_size):
@@ -102,14 +107,16 @@ class RollingSet(object):
         return len(self.all_els)
 
 
-def save(raw_data, filename):
+def save(contribs_by_days_ago, authors_by_count, filename):
+    listified = [(d, list(e)) for (d, e) in contribs_by_days_ago]
     with open(filename, 'wb') as f:
-        json.dump([(d, list(e)) for (d, e) in raw_data], f)
+        json.dump((listified, authors_by_count), f)
 
 def load(filename):
     with open(filename, 'rb') as f:
-        raw_data = [(d, set(e)) for (d, e) in json.load(f)]
-    return raw_data
+        (listified, authors_by_count) = json.load(f)
+    contribs_by_days_ago = [(d, set(e)) for (d, e) in listified]
+    return contribs_by_days_ago, authors_by_count
 
 def make_one_range_plot_values(all_ranges, yval, all_x_vals):
     new_x_vals = []
@@ -127,7 +134,7 @@ def make_one_range_plot_values(all_ranges, yval, all_x_vals):
             new_x_vals.append(None)
     return new_x_vals
 
-def make_graph(contribs_by_days_ago, active_window=14):
+def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     all_contribs = set()
     totals = []
     actives = []
@@ -184,7 +191,8 @@ def make_graph(contribs_by_days_ago, active_window=14):
     # get graphable ranges for each person
     graphable_ranges = {}
     order = []
-    contrib_count_by_bucket = defaultdict(int)
+    single_contrib_count_by_bucket = defaultdict(int)
+    total_contrib_count_by_bucket = defaultdict(int)
     bucket_size = 60
     total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     total_age = total_x_values[0] - total_x_values[-1]
@@ -193,17 +201,24 @@ def make_graph(contribs_by_days_ago, active_window=14):
                                               total_x_values)
         start_day = new_data.index(1)
         count = new_data.count(1)
-        if count <= active_window:
-            contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
+        if authors_by_count[person] == 1:
+            single_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
+        total_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
         order.append((start_day, person))
         # find who's at risk of falling out
         last_days_ago = days_ago_ranges[-1][-1]
-        if 30 <= last_days_ago < 180 and count > active_window:
-            m = '%s: last: %s (total days active: %s)' % (person, last_days_ago, count)
+        r = count / float(authors_by_count[person])
+        # at least one patch, active in the last 90 days, and it's been longer than normal since your last patch
+        if last_days_ago > r and authors_by_count[person] > 1 and last_days_ago < 180:
+            m = '%s: last: %s (total days active: %s, avg days per patch: %.2f)' % (person, last_days_ago, count, r)
             print m
+        # if last_days_ago> 180 and count > active_window:
+        #     m = '%s: last: %s (total days active: %s)' % (person, last_days_ago, count)
+        #     print m
     print "Number of one-time contributors in a time bucket"
-    for b, c in contrib_count_by_bucket.items():
-        print '%d: %d' % (b*bucket_size, c)
+    for b in total_contrib_count_by_bucket:
+        ratio = single_contrib_count_by_bucket[b] / float(total_contrib_count_by_bucket[b])
+        print '%d: %d, %d, %.2f' % (b*bucket_size, total_contrib_count_by_bucket[b], single_contrib_count_by_bucket[b], ratio)
     order.sort(reverse=True)
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
@@ -290,17 +305,19 @@ def make_graph(contribs_by_days_ago, active_window=14):
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
         how_many_days = person_days.count(i)
-        persons.append((i, person.split('<', 1)[0].strip()))
+        c = authors_by_count[person]
+        r = how_many_days / float(c)
+        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %.2f)' % (c, r)))
         alpha = 1.0
-        if how_many_days <= active_window:
+        if authors_by_count[person] == 1:
             alpha = 0.5
         days_since_first = total_age - person_days.index(i)
         # since your first commit, how much of the life of the project have you been active?
-        bcolor = int((how_many_days / float(days_since_first)) * 0xff) - 1
+        rcolor = int((how_many_days / float(days_since_first)) * 0xff) - 1
 
-        rcolor = 0x7f
+        bcolor = 0x7f
         # how much of the total life of the project have you been active?
-        gcolor = int((how_many_days / float(total_age)) * 0xff) - 1
+        gcolor = 0  # int((how_many_days / float(total_age)) * 0xff) - 1
         pyplot.plot(total_x_values, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt",
                     alpha=alpha, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
@@ -330,21 +347,21 @@ def make_graph(contribs_by_days_ago, active_window=14):
 
 if __name__ == '__main__':
     try:
-        raw_data = load(FILENAME)
+        contribs_by_days_ago, authors_by_count = load(FILENAME)
         # update the data first
-        most_recent_date = max(x[0] for x in raw_data)
+        most_recent_date = max(x[0] for x in contribs_by_days_ago)
         days_ago = (datetime.datetime.now() - \
             datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
         if days_ago > MIN_DAYS_AGO:
             print 'Updating previous data with %d days...' % days_ago
             recent_data = get_data(days_ago, MIN_DAYS_AGO)
-            raw_data.extend(recent_data)
-            save(raw_data, FILENAME)
+            contribs_by_days_ago.extend(recent_data)
+            save(contribs_by_days_ago, authors_by_count, FILENAME)
         else:
             print 'Data file (%s) is up to date.' % FILENAME
     except (IOError, ValueError):
-        raw_data = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
-        save(raw_data, FILENAME)
+        contribs_by_days_ago, authors_by_count = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
+        save(contribs_by_days_ago, authors_by_count, FILENAME)
 
     aw = 14
     try:
@@ -357,4 +374,4 @@ if __name__ == '__main__':
         aw = 14
 
     print 'Using activity window of %d' % aw
-    make_graph(raw_data, aw)  
+    make_graph(contribs_by_days_ago, authors_by_count, aw)
