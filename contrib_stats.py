@@ -184,18 +184,27 @@ def make_graph(contribs_by_days_ago, active_window=14):
     # get graphable ranges for each person
     graphable_ranges = {}
     order = []
+    contrib_count_by_bucket = defaultdict(int)
+    bucket_size = 60
     total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
+    total_age = total_x_values[0] - total_x_values[-1]
     for person, days_ago_ranges in contrib_activity_days.items():
         new_data = make_one_range_plot_values(days_ago_ranges, 1,
                                               total_x_values)
-        order.append((new_data, person))
-        # find who's at risk of falling out
+        start_day = new_data.index(1)
         count = new_data.count(1)
+        if count <= active_window:
+            contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
+        order.append((start_day, person))
+        # find who's at risk of falling out
         last_days_ago = days_ago_ranges[-1][-1]
         if 30 <= last_days_ago < 180 and count > active_window:
             m = '%s: last: %s (total days active: %s)' % (person, last_days_ago, count)
             print m
-    order.sort()
+    print "Number of one-time contributors in a time bucket"
+    for b, c in contrib_count_by_bucket.items():
+        print '%d: %d' % (b*bucket_size, c)
+    order.sort(reverse=True)
     for _junk, person in order:
         days_ago_ranges = contrib_activity_days[person]
         yval = len(graphable_ranges)
@@ -280,14 +289,21 @@ def make_graph(contribs_by_days_ago, active_window=14):
     # graph contrib activity ranges
     persons = []
     for person, (i, person_days) in graphable_ranges.items():
+        how_many_days = person_days.count(i)
         persons.append((i, person.split('<', 1)[0].strip()))
         alpha = 1.0
-        foo = int((person_days.count(i) / float(active_window)) * 100)
-        if foo == 100:
-            alpha = 0.25
+        if how_many_days <= active_window:
+            alpha = 0.5
+        days_since_first = total_age - person_days.index(i)
+        # since your first commit, how much of the life of the project have you been active?
+        bcolor = int((how_many_days / float(days_since_first)) * 0xff) - 1
+
+        rcolor = 0x7f
+        # how much of the total life of the project have you been active?
+        gcolor = int((how_many_days / float(total_age)) * 0xff) - 1
         pyplot.plot(total_x_values, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=alpha)
+                    alpha=alpha, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
     pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
