@@ -212,7 +212,7 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         avg_days_active_per_patch = count / float(authors_by_count[person])
         danger_metric = last_days_ago / avg_days_active_per_patch
         # at least one patch, active in the last 90 days, and it's been longer than normal since your last patch
-        if authors_by_count[person] > 1 and 1.5 < danger_metric < 15.0:
+        if authors_by_count[person] > 1 and 1.5 < danger_metric < 5.0:
             m = '%s:\n\tlast active %s days ago (patches: %d, total days active: %s, avg activity per patch: %.2f, danger: %.2f)' % (person, last_days_ago, authors_by_count[person], count, avg_days_active_per_patch, danger_metric)
             print m
     # this needs work. it should count someone as one-time if they've only landed one patch up to that bucket point
@@ -353,8 +353,12 @@ if __name__ == '__main__':
             datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
         if days_ago > MIN_DAYS_AGO:
             print 'Updating previous data with %d days...' % days_ago
-            recent_data = get_data(days_ago, MIN_DAYS_AGO)
+            recent_data, new_by_count = get_data(days_ago, MIN_DAYS_AGO)
             contribs_by_days_ago.extend(recent_data)
+            for a, c in new_by_count.items():
+                if a not in authors_by_count:
+                    authors_by_count[a] = 0
+                authors_by_count[a] += c
             save(contribs_by_days_ago, authors_by_count, FILENAME)
         else:
             print 'Data file (%s) is up to date.' % FILENAME
