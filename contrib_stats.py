@@ -206,7 +206,6 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         if authors_by_count[person] == 1:
             single_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
         total_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
-        order.append((start_day, person))
         # find who's at risk of falling out
         last_days_ago = days_ago_ranges[-1][-1]
         avg_days_active_per_patch = count / float(authors_by_count[person])
@@ -215,18 +214,19 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
         if authors_by_count[person] > 1 and 1.5 < danger_metric < 5.0:
             m = '%s:\n\tlast active %s days ago (patches: %d, total days active: %s, avg activity per patch: %.2f, danger: %.2f)' % (person, last_days_ago, authors_by_count[person], count, avg_days_active_per_patch, danger_metric)
             print m
+        order.append((start_day, danger_metric, person))
     # this needs work. it should count someone as one-time if they've only landed one patch up to that bucket point
     # print "Number of one-time contributors in a time bucket"
     # for b in total_contrib_count_by_bucket:
     #     ratio = single_contrib_count_by_bucket[b] / float(total_contrib_count_by_bucket[b])
     #     print '%d: %d, %d, %.2f' % (b*bucket_size, total_contrib_count_by_bucket[b], single_contrib_count_by_bucket[b], ratio)
     order.sort(reverse=True)
-    for _junk, person in order:
+    for _junk, danger_metric, person in order:
         days_ago_ranges = contrib_activity_days[person]
         yval = len(graphable_ranges)
         cumulative_x_vals, sparse_x_vals = make_one_range_plot_values(
             days_ago_ranges, yval, total_x_values)
-        graphable_ranges[person] = (yval, cumulative_x_vals)
+        graphable_ranges[person] = (yval, sparse_x_vals, cumulative_x_vals, danger_metric)
 
     xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
 
@@ -304,22 +304,22 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
 
     # graph contrib activity ranges
     persons = []
-    for person, (i, person_days) in graphable_ranges.items():
+    for person, (i, person_days, cumulative_days, danger_metric) in graphable_ranges.items():
         how_many_days = person_days.count(i)
         c = authors_by_count[person]
-        r = how_many_days / c
-        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %d)' % (c, r)))
-        alpha = 1.0
-        if authors_by_count[person] == 1:
-            alpha = 0.5
-        days_since_first = total_age - person_days.index(i)
+        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %.2f)' % (c, danger_metric)))
+        days_since_first = total_age - cumulative_days.index(i)
         # since your first commit, how much of the life of the project have you been active?
-        rcolor = int((min(how_many_days, days_since_first) / float(days_since_first)) * 0xff) - 1
+        rcolor = (min(how_many_days, days_since_first) / float(days_since_first)) * 0x7f
+        rcolor += 0x7f
         bcolor = 0x7f
         gcolor = 0
+        pyplot.plot(total_x_values, cumulative_days, '-',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=0.3, color='#333333')
         pyplot.plot(total_x_values, person_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=alpha, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
+                    alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
     pyplot.title('Contributor Actvity (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributor')
