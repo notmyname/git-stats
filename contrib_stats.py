@@ -139,14 +139,14 @@ def make_one_range_plot_values(all_ranges, yval, all_x_vals):
 def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     all_contribs = set()
     totals = []
-    actives = []
-    actives_avg = []
-    rolling_avg_window = 90
+    actives_windows = [(180, (365, 730)), (90, (180, 365)), (14, (30, 90))]
+    actives = {x: [] for (x, _) in actives_windows}
+    rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
+    actives_avg = {x: defaultdict(list) for (x, _) in actives_windows}
     dtotal = []
     dactive = []
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
     contrib_activity_days = {}  # contrib -> [(start_days_ago, end_days_ago), ...]
-    rs = RollingSet(active_window)
     for date, c in contribs_by_days_ago:
         end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
             datetime.timedelta(days=active_window)
@@ -178,17 +178,13 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
                 contrib_activity_days[person].append(new_range_days)
         all_contribs |= c
         totals.append(len(all_contribs))
-        rs.add(c)
-        actives.append(len(rs))
-        denom = min(len(actives), rolling_avg_window)
-        s = sum(actives[-rolling_avg_window:])
-        actives_avg.append(float(s) / denom)
-        try:
-            dtotal.append(totals[-1] - totals[-2])
-            dactive.append(actives[-1] - actives[-2])
-        except:
-            dtotal.append(0)
-            dactive.append(0)
+        for aw, rolling_avg_windows in actives_windows:
+            rolling_sets[aw].add(c)
+            actives[aw].append(len(rolling_sets[aw]))
+            for r_a_w in rolling_avg_windows:
+                denom = min(len(actives[aw]), r_a_w)
+                s = sum(actives[aw][-r_a_w:])
+                actives_avg[aw][r_a_w].append(float(s) / denom)
 
     # get graphable ranges for each person
     graphable_ranges = {}
@@ -230,18 +226,19 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
 
     xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
 
-    lens = map(len, [totals, actives, actives_avg, dtotal, dactive, xs])
+    lens = map(len, [totals, xs])
     assert len(set(lens)) == 1, lens
 
     title_date = (datetime.datetime.now() - datetime.timedelta(days=MIN_DAYS_AGO)).date()
 
     # graph active contribs
     lookback = MAX_DAYS_AGO
-    pyplot.plot(xs[-lookback:], actives[-lookback:], '-', color='blue',
-                label="Active contributors", drawstyle="steps")
-    pyplot.plot(xs[-lookback:], actives_avg[-lookback:], '-', color='red',
-                label="Active contributors (%d day avg)" % rolling_avg_window,
-                drawstyle="steps")
+    for aw, rolling_avg_windows in actives_windows:
+        pyplot.plot(xs[-lookback:], actives[aw][-lookback:], '-', alpha=0.5,
+                    label="%d day activity window" % aw)
+        for r_a_w in rolling_avg_windows:
+            pyplot.plot(xs[-lookback:], actives_avg[aw][r_a_w][-lookback:], '-',
+                        label="%d day avg (%d)" % (r_a_w, aw), linewidth=3)
     pyplot.title('Active contributors (as of %s)' % title_date)
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
@@ -253,7 +250,7 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     ax = pyplot.gca()
     ax.invert_xaxis()
     fig = pyplot.gcf()
-    fig.set_size_inches(16, 4)
+    fig.set_size_inches(24, 8)
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
@@ -277,29 +274,6 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
-    pyplot.close()
-
-    # graph deltas
-    lookback = 365
-    pyplot.plot(xs[-lookback:], dactive[-lookback:], '-',
-                color='blue', label="Active contributors", drawstyle="steps")
-    pyplot.plot(xs[-lookback:], dtotal[-lookback:], '-',
-                color='red', label="Total contributors", drawstyle="steps")
-    pyplot.title('Change in contributors over time (as of %s)' % title_date)
-    pyplot.xlabel('Days Ago')
-    pyplot.ylabel('Change in contributors')
-    pyplot.legend(loc='upper left')
-    x_ticks = range(0, lookback, 30)
-    pyplot.xticks(x_ticks, x_ticks)
-    pyplot.grid(b=True, which='both', axis='both')
-    pyplot.autoscale(enable=True, axis='x', tight=True)
-    ax = pyplot.gca()
-    ax.invert_xaxis()
-    fig = pyplot.gcf()
-    fig.set_size_inches(16, 4)
-    fig.dpi = 200
-    fig.set_frameon(True)
-    fig.savefig('contrib_deltas.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
     # graph contrib activity ranges
