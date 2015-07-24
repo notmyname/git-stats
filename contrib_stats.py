@@ -1,5 +1,6 @@
 import json
 import subprocess
+import time
 import datetime
 import re
 import operator
@@ -31,11 +32,15 @@ def get_max_min_days_ago():
 
 MAX_DAYS_AGO, MIN_DAYS_AGO = get_max_min_days_ago()
 FILENAME = 'contrib_stats.data'
+REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 
 excluded_authors = (
     'Jenkins <jenkins@review.openstack.org>',
     'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
     'OpenStack Jenkins <jenkins@openstack.org>',
+    'SwiftStack Cluster CI <openstack-ci@swiftstack.com>',
+    'Rackspace GolangSwift CI <mike+goci@weirdlooking.com>',
+    'Trivial Rebase <trivial-rebase@review.openstack.org>',
 )
 
 def get_one_day(days_ago):
@@ -108,35 +113,72 @@ class RollingSet(object):
         return len(self.all_els)
 
 
-def save(contribs_by_days_ago, authors_by_count, filename):
+def save_commits(contribs_by_days_ago, authors_by_count, filename):
     listified = [(d, list(e)) for (d, e) in contribs_by_days_ago]
     with open(filename, 'wb') as f:
         json.dump((listified, authors_by_count), f)
 
-def load(filename):
+def load_commits(filename):
     with open(filename, 'rb') as f:
         (listified, authors_by_count) = json.load(f)
     contribs_by_days_ago = [(d, set(e)) for (d, e) in listified]
     return contribs_by_days_ago, authors_by_count
 
-def make_one_range_plot_values(all_ranges, yval, all_x_vals):
-    global_start = min(x[1] for x in all_ranges)
-    global_end = max(x[0] for x in all_ranges)
+def load_reviewers(filename):
+    reviewers = defaultdict(set)
+    with open(filename, 'rb') as f:
+        for line in f:
+            if line:
+                review_data = json.loads(line)
+            else:
+                continue
+            if 'comments' not in review_data:
+                continue
+            for review_comment in review_data['comments']:
+                when = review_comment['timestamp']
+                days_ago = datetime.timedelta(seconds=time.time() - when).days
+                reviewer = review_comment['reviewer']
+                if 'email' not in reviewer:
+                    continue
+                reviewer = '%(name)s <%(email)s>' % reviewer
+                if reviewer not in excluded_authors:
+                    reviewers[reviewer].add(days_ago)
+
+    return reviewers
+
+def make_one_range_plot_values(all_ranges, yval, all_x_vals, review_dates):
+    global_start = 9999999999
+    global_end = -global_start
+    if all_ranges is not None:
+        global_start = min(x[1] for x in all_ranges)
+        global_end = max(x[0] for x in all_ranges)
+    if review_dates is not None:
+        first_review = min(review_dates)
+        last_review = max(review_dates)
+        if first_review == last_review:
+            last_review += 1
+        global_start = min(global_start, first_review)
+        global_end = max(global_end, last_review)
     global_range = range(global_start, global_end)
     cumulative_x_vals = [None] * len(all_x_vals)
     sparse_x_vals = [None] * len(all_x_vals)
+    review_x_vals = [None] * len(all_x_vals)
     for i, x_val in enumerate(all_x_vals):
-        sparse_x_vals[i] = None
-        cumulative_x_vals[i] = None
-        for run in all_ranges:
-            if x_val in range(min(run), max(run)):
-                sparse_x_vals[i] = yval
-                break
+        if all_ranges:
+            for run in all_ranges:
+                if x_val in range(min(run), max(run)):
+                    sparse_x_vals[i] = yval
+                    break
         if x_val in global_range:
             cumulative_x_vals[i] = yval
-    return cumulative_x_vals, sparse_x_vals
+        if review_dates:
+            if x_val in review_dates:
+                review_x_vals[i] = yval
+                review_x_vals[i+1] = yval
+    return cumulative_x_vals, sparse_x_vals, review_x_vals
 
-def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
+def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
+               active_window=14):
     all_contribs = set()
     totals = []
     actives_windows = [(180, (365, 730)), (90, (180, 365)), (14, (30, 90))]
@@ -189,40 +231,41 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
     # get graphable ranges for each person
     graphable_ranges = {}
     order = []
-    single_contrib_count_by_bucket = defaultdict(int)
-    total_contrib_count_by_bucket = defaultdict(int)
     bucket_size = 60
     total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
     total_age = total_x_values[0] - total_x_values[-1]
-    for person, days_ago_ranges in contrib_activity_days.items():
-        cumulative_x_vals, sparse_x_vals = make_one_range_plot_values(
-            days_ago_ranges, 1, total_x_values)
+    total_people = set(contrib_activity_days.keys() + reviewers.keys())
+    for person in total_people:
+        days_ago_ranges = contrib_activity_days.get(person)
+        cumulative_x_vals, sparse_x_vals, review_x_vals = \
+            make_one_range_plot_values(
+                days_ago_ranges, 1, total_x_values, reviewers.get(person))
         start_day = cumulative_x_vals.index(1)
         count = sparse_x_vals.count(1)
-        if authors_by_count[person] == 1:
-            single_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
-        total_contrib_count_by_bucket[(total_age - start_day) // bucket_size] += 1
         # find who's at risk of falling out
-        last_days_ago = days_ago_ranges[-1][-1]
-        avg_days_active_per_patch = count / float(authors_by_count[person])
-        danger_metric = last_days_ago / avg_days_active_per_patch
-        # at least one patch, active in the last 90 days, and it's been longer than normal since your last patch
-        if authors_by_count[person] > 1 and 1.5 < danger_metric < 5.0:
-            m = '%s:\n\tlast active %s days ago (patches: %d, total days active: %s, avg activity per patch: %.2f, danger: %.2f)' % (person, last_days_ago, authors_by_count[person], count, avg_days_active_per_patch, danger_metric)
-            print m
+        if count:
+            last_days_ago = days_ago_ranges[-1][-1]
+            avg_days_active_per_patch = count / float(authors_by_count[person])
+            danger_metric = last_days_ago / avg_days_active_per_patch
+            # at least one patch, active in the last 90 days, and it's been longer
+            # than normal since your last patch
+            if authors_by_count[person] > 1 and 1.5 < danger_metric < 5.0:
+                m = ('%s:\n\tlast active %s days ago (patches: %d, '
+                     'total days active: %s, avg activity per patch: %.2f, '
+                     'danger: %.2f)'
+                    ) % (person, last_days_ago, authors_by_count[person], count,
+                         avg_days_active_per_patch, danger_metric)
+                print m
         order.append((start_day, danger_metric, person))
-    # this needs work. it should count someone as one-time if they've only landed one patch up to that bucket point
-    # print "Number of one-time contributors in a time bucket"
-    # for b in total_contrib_count_by_bucket:
-    #     ratio = single_contrib_count_by_bucket[b] / float(total_contrib_count_by_bucket[b])
-    #     print '%d: %d, %d, %.2f' % (b*bucket_size, total_contrib_count_by_bucket[b], single_contrib_count_by_bucket[b], ratio)
     order.sort(reverse=True)
     for _junk, danger_metric, person in order:
-        days_ago_ranges = contrib_activity_days[person]
+        days_ago_ranges = contrib_activity_days.get(person)
         yval = len(graphable_ranges)
-        cumulative_x_vals, sparse_x_vals = make_one_range_plot_values(
-            days_ago_ranges, yval, total_x_values)
-        graphable_ranges[person] = (yval, sparse_x_vals, cumulative_x_vals, danger_metric)
+        cumulative_x_vals, sparse_x_vals, review_x_vals = \
+            make_one_range_plot_values(
+                days_ago_ranges, yval, total_x_values, reviewers.get(person))
+        graphable_ranges[person] = (yval, sparse_x_vals, cumulative_x_vals,
+                                    danger_metric, review_x_vals)
 
     xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
 
@@ -278,16 +321,19 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
 
     # graph contrib activity ranges
     persons = []
-    for person, (i, person_days, cumulative_days, danger_metric) in graphable_ranges.items():
+    for person, (i, person_days, cumulative_days, danger_metric, review_vals) in graphable_ranges.items():
         how_many_days = person_days.count(i)
-        c = authors_by_count[person]
+        c = authors_by_count.get(person, 0)
         persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %.2f)' % (c, danger_metric)))
         days_since_first = total_age - cumulative_days.index(i)
         # since your first commit, how much of the life of the project have you been active?
         rcolor = (min(how_many_days, days_since_first) / float(days_since_first)) * 0x7f
         rcolor += 0x7f
-        bcolor = 0x7f
+        bcolor = 0x60
         gcolor = 0
+        pyplot.plot(total_x_values, review_vals, '-',
+                    label=person, linewidth=12, solid_capstyle="butt",
+                    alpha=1.0, color='#006400')
         pyplot.plot(total_x_values, cumulative_days, '-',
                     label=person, linewidth=10, solid_capstyle="butt",
                     alpha=0.3, color='#333333')
@@ -319,8 +365,9 @@ def make_graph(contribs_by_days_ago, authors_by_count, active_window=14):
 
 
 if __name__ == '__main__':
+    reviewers = load_reviewers(REVIEWS_FILENAME)
     try:
-        contribs_by_days_ago, authors_by_count = load(FILENAME)
+        contribs_by_days_ago, authors_by_count = load_commits(FILENAME)
         # update the data first
         most_recent_date = max(x[0] for x in contribs_by_days_ago)
         days_ago = (datetime.datetime.now() - \
@@ -333,12 +380,12 @@ if __name__ == '__main__':
                 if a not in authors_by_count:
                     authors_by_count[a] = 0
                 authors_by_count[a] += c
-            save(contribs_by_days_ago, authors_by_count, FILENAME)
+            save_commits(contribs_by_days_ago, authors_by_count, FILENAME)
         else:
             print 'Data file (%s) is up to date.' % FILENAME
     except (IOError, ValueError):
         contribs_by_days_ago, authors_by_count = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
-        save(contribs_by_days_ago, authors_by_count, FILENAME)
+        save_commits(contribs_by_days_ago, authors_by_count, FILENAME)
 
     aw = 14
     try:
@@ -351,4 +398,4 @@ if __name__ == '__main__':
         aw = 14
 
     print 'Using activity window of %d' % aw
-    make_graph(contribs_by_days_ago, authors_by_count, aw)
+    make_graph(contribs_by_days_ago, authors_by_count, reviewers, aw)
