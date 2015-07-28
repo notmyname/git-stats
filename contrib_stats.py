@@ -41,6 +41,7 @@ excluded_authors = (
     'SwiftStack Cluster CI <openstack-ci@swiftstack.com>',
     'Rackspace GolangSwift CI <mike+goci@weirdlooking.com>',
     'Trivial Rebase <trivial-rebase@review.openstack.org>',
+    'Coraid CI <coraid-openstack-ci-all@mirantis.com>',
 )
 
 def get_one_day(days_ago):
@@ -124,8 +125,30 @@ def load_commits(filename):
     contribs_by_days_ago = [(d, set(e)) for (d, e) in listified]
     return contribs_by_days_ago, authors_by_count
 
+
+# returns {unmapped person: mapped name email}
+def make_mapping():
+    mapped_people = {}
+    mailmap = {}
+    with open('.mailmap', 'rb') as f:
+        for line in f:
+            line = line.strip()
+            name_email, rest = line.split('>', 1)
+            name, email = name_email.rsplit(' ', 1)
+            email = email + '>'
+            real = '%s %s' % (name, email)
+            rest = rest.strip()
+            if '<' in rest:
+                rest = rest[rest.index('<'):]
+            else:
+                rest = email
+            mapped_people[rest] = real
+    return mapped_people
+
+
 def load_reviewers(filename):
     reviewers = defaultdict(set)
+    mapping = make_mapping()
     with open(filename, 'rb') as f:
         for line in f:
             if line:
@@ -140,10 +163,12 @@ def load_reviewers(filename):
                 reviewer = review_comment['reviewer']
                 if 'email' not in reviewer:
                     continue
-                reviewer = '%(name)s <%(email)s>' % reviewer
-                if reviewer not in excluded_authors:
-                    reviewers[reviewer].add(days_ago)
-
+                email = '<%s>' % reviewer['email']
+                name_email = '%s %s' % (reviewer['name'], email)
+                if email in mapping:
+                    name_email = mapping[email]
+                if name_email not in excluded_authors:
+                    reviewers[name_email].add(days_ago)
     return reviewers
 
 def make_one_range_plot_values(all_ranges, yval, all_x_vals, review_dates):
@@ -176,6 +201,7 @@ def make_one_range_plot_values(all_ranges, yval, all_x_vals, review_dates):
                 review_x_vals[i] = yval
                 review_x_vals[i+1] = yval
     return cumulative_x_vals, sparse_x_vals, review_x_vals
+
 
 def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
                active_window=14):
@@ -242,7 +268,8 @@ def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
                 days_ago_ranges, 1, total_x_values, reviewers.get(person))
         start_day = cumulative_x_vals.index(1)
         count = sparse_x_vals.count(1)
-        # find who's at risk of falling out
+        danger_metric = 0.0
+        # find who's at risk of falling out (need to update for reviewers)
         if count:
             last_days_ago = days_ago_ranges[-1][-1]
             avg_days_active_per_patch = count / float(authors_by_count[person])
@@ -324,7 +351,8 @@ def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
     for person, (i, person_days, cumulative_days, danger_metric, review_vals) in graphable_ranges.items():
         how_many_days = person_days.count(i)
         c = authors_by_count.get(person, 0)
-        persons.append((i, person.split('<', 1)[0].strip() + ' (%d, %.2f)' % (c, danger_metric)))
+        name = person.split('<', 1)[0].strip()
+        persons.append((i, name + ' (%d, %.2f)' % (c, danger_metric)))
         days_since_first = total_age - cumulative_days.index(i)
         # since your first commit, how much of the life of the project have you been active?
         rcolor = (min(how_many_days, days_since_first) / float(days_since_first)) * 0x7f
