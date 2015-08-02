@@ -44,6 +44,10 @@ excluded_authors = (
     'Coraid CI <coraid-openstack-ci-all@mirantis.com>',
 )
 
+additional_mapping = (
+    # ('<tim@swiftstack.com>', '<tim.burke@gmail.com>'),
+)
+
 def get_one_day(days_ago):
     cmd = ("git shortlog -es --before='@{%d days ago}' "
             "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
@@ -143,6 +147,8 @@ def make_mapping():
             else:
                 rest = email
             mapped_people[rest] = real
+    for bad, good in additional_mapping:
+        mapped_people[bad] = good
     return mapped_people
 
 
@@ -216,6 +222,8 @@ def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
     contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
     contrib_activity_days = {}  # contrib -> [(start_days_ago, end_days_ago), ...]
     for date, c in contribs_by_days_ago:
+        # redo reviewers as [(days_ago, set([c, c2, ...])), ...]
+        # so that we can include reviews in activity report?
         end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
             datetime.timedelta(days=active_window)
         end_window_days = (datetime.datetime.now() - end_window).days
@@ -247,7 +255,7 @@ def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
         all_contribs |= c
         totals.append(len(all_contribs))
         for aw, rolling_avg_windows in actives_windows:
-            rolling_sets[aw].add(c)
+            rolling_sets[aw].add(c)  # does this only work if dates are in order? what if some are missing?
             actives[aw].append(len(rolling_sets[aw]))
             for r_a_w in rolling_avg_windows:
                 denom = min(len(actives[aw]), r_a_w)
