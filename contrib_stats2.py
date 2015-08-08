@@ -296,11 +296,11 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
     for aw, rolling_avg_windows in actives_windows:
-        pyplot.plot(x_vals, actives[aw], '-', alpha=0.5,
-                    label="%d day activity window" % aw)
+        # pyplot.plot(x_vals, actives[aw], '-', alpha=0.5,
+        #             label="%d day activity total" % aw)
         for r_a_w in rolling_avg_windows:
             pyplot.plot(x_vals, actives_avg[aw][r_a_w], '-',
-                        label="%d day avg (%d)" % (r_a_w, aw), linewidth=3)
+                        label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
     pyplot.title('Active contributors (as of %s)' % datetime.datetime.now().date())
     pyplot.ylabel('Contributor Count')
     pyplot.legend(loc='upper left')
@@ -370,7 +370,11 @@ if __name__ == '__main__':
     print 'Global first date is:', global_first_date
     print 'Global last date is:', global_last_date
 
-    actives_windows = [(180, (365, 730)), (90, (180, 365)), (14, (30, 90))]
+    actives_windows = [
+        # (180, (365, 730)),
+        # (90, (180, 365)),
+        (7, (30, 90, 180)),
+    ]
     actives = {x: [] for (x, _) in actives_windows}
     rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
     actives_avg = {x: defaultdict(list) for (x, _) in actives_windows}
@@ -396,7 +400,8 @@ if __name__ == '__main__':
                 dates_by_person[person]['reviews'].add(d)
                 people_by_date[d]['reviews'].add(person)
 
-        # calcs for total active contribs
+        # Calculate the total active contributor count for a given
+        # number of days. Then also make a moving average of that.
         for aw, rolling_avg_windows in actives_windows:
             active_today = set()
             active_today.update(people_by_date[date].get('contribs', set()))
@@ -411,5 +416,5 @@ if __name__ == '__main__':
     print len(dates_by_person), 'total contributors found'
 
     # draw graphs
-    # draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
+    draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
     draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
