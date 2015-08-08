@@ -4,6 +4,7 @@ import subprocess
 from collections import defaultdict
 import json
 import re
+from matplotlib import pyplot
 
 def date_range(start_date, end_date, strings=True):
     '''yields an inclusive list of dates'''
@@ -121,6 +122,81 @@ def map_people(unmapped_people):
         mapped_people.add(person)
     return mapped_people
 
+def draw_graphs(dates_by_person, start_date, end_date):
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    graphable_data = {}
+    order = []
+    for person, data in dates_by_person.iteritems():
+        first_day = '9999-99-99'
+        last_day = '0000-00-00'
+        for key in data:
+            first_day = min(first_day, min(data[key]))
+            last_day = max(last_day, max(data[key]))
+        order.append((first_day, last_day, person))
+    order.sort(reverse=True)
+    for first_day, last_day, person in order:
+        review_data = []
+        commit_data = []
+        cumulative_data = []
+        yval = len(graphable_data)
+        for date in all_dates:
+            person_data = dates_by_person[person]
+            if date in person_data['contribs']:
+                commit_data.append(yval)
+            else:
+                commit_data.append(None)
+            if date in person_data['reviews']:
+                review_data.append(yval)
+            else:
+                review_data.append(None)
+            if first_day <= date <= last_day:
+                cumulative_data.append(yval)
+            else:
+                cumulative_data.append(None)
+        lens = map(len, [commit_data, review_data, cumulative_data, x_vals])
+        assert len(set(lens)) == 1, '%r %s' % (lens, person)
+        graphable_data[person] = (yval, commit_data, review_data, cumulative_data)
+
+    person_labels = []
+    for person, (yval, commit_data, review_data, cumulative_data) in graphable_data.iteritems():
+        name = person.split('<', 1)[0].strip()
+        person_labels.append((yval, name))
+        how_many_days_active = cumulative_data.count(yval)
+        rcolor = 0xa0
+        bcolor = 0x60
+        gcolor = 0
+
+        pyplot.plot(x_vals, cumulative_data, linestyle='-', drawstyle='steps-pre',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=0.3, color='#333333')
+        pyplot.plot(x_vals, commit_data, linestyle='-', drawstyle='steps-pre',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
+        pyplot.plot(x_vals, review_data, linestyle='-', drawstyle='steps-pre',
+                    label=person, linewidth=2, solid_capstyle="butt",
+                    alpha=1.0, color='#006400')
+    pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
+    pyplot.xlabel('Days Ago')
+    pyplot.ylabel('Contributor')
+    person_labels.sort()
+    pyplot.yticks([p[0] for p in person_labels], [p[1] for p in person_labels])
+    x_ticks = list(reversed(range(0, x_vals[-1], 60)))
+    pyplot.xticks(x_ticks, x_ticks)
+    pyplot.grid(b=True, which='both', axis='both')
+    pyplot.ylim(-1, person_labels[-1][0] + 1)
+    pyplot.autoscale(enable=True, axis='x', tight=True)
+    vertical_size_per_person = 0.25
+    vertical_size = vertical_size_per_person * len(person_labels)
+    horizontal_size_per_day = 0.02
+    horizontal_size = horizontal_size_per_day * len(x_vals)
+    fig = pyplot.gcf()
+    fig.set_size_inches(horizontal_size, vertical_size)
+    fig.set_frameon(False)
+    fig.savefig('contrib_activity2.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
+
 if __name__ == '__main__':
     # load patch info
     try:
@@ -134,7 +210,11 @@ if __name__ == '__main__':
         if most_recent_date < LAST_DATE:
             print 'Updating previous data with data since %s...' % most_recent_date
             recent_data, new_by_count = get_data(most_recent_date, LAST_DATE)
-            contribs_by_date.extend(recent_data)
+            for date in recent_data:
+                if date in contribs_by_date:
+                    contribs_by_date[date].update(recent_data[date])
+                else:
+                    contribs_by_date[date] = recent_data[date]
             for a, c in new_by_count.items():
                 if a not in authors_by_count:
                     authors_by_count[a] = 0
@@ -146,7 +226,6 @@ if __name__ == '__main__':
         print exc
         contribs_by_date, authors_by_count = get_data(FIRST_DATE, LAST_DATE)
         save_commits(contribs_by_date, authors_by_count, FILENAME)
-    sorted_authors = sorted(authors_by_count.keys())
 
     # load review info
     reviewers_by_date = load_reviewers(REVIEWS_FILENAME)
@@ -176,12 +255,11 @@ if __name__ == '__main__':
         for person in contribs:
             end_date = date_obj + contrib_window
             for d in date_range(date, end_date):
-                dates_by_person[person]['contribs'].add(date)
+                dates_by_person[person]['contribs'].add(d)
         for person in reviews:
             end_date = date_obj + review_window
             for d in date_range(date, end_date):
-                dates_by_person[person]['reviews'].add(date)
-
-    print min(dates_by_person['John Dickinson <me@not.mn>']['contribs'])
+                dates_by_person[person]['reviews'].add(d)
 
     # draw graphs
+    draw_graphs(dates_by_person, global_first_date, global_last_date)
