@@ -369,6 +369,7 @@ if __name__ == '__main__':
     global_last_date = str(max(last_contrib_date, last_review_date))
     print 'Global first date is:', global_first_date
     print 'Global last date is:', global_last_date
+    unique_reviewer_set = set()
 
     actives_windows = [
         # (180, (365, 730)),
@@ -386,6 +387,7 @@ if __name__ == '__main__':
         reviews = map_people(reviews)
         people_by_date[date]['contribs'] = contribs
         people_by_date[date]['reviews'] = reviews
+        unique_reviewer_set.update(reviews)
         date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
         contrib_window = datetime.timedelta(days=14)
         review_window = datetime.timedelta(days=5)
@@ -413,7 +415,9 @@ if __name__ == '__main__':
                 s = sum(actives[aw][-r_a_w:])
                 actives_avg[aw][r_a_w].append(float(s) / denom)
 
-    print len(dates_by_person), 'total contributors found'
+    print len(authors_by_count), 'patch authors found'
+    print len(unique_reviewer_set), 'review commentors found'
+    print len(dates_by_person), 'total unique contributors found'
 
     # draw graphs
     draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
