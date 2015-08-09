@@ -324,6 +324,61 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     fig.savefig('active_contribs2.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
+def draw_total_contributors_graph(people_by_date, start_date, end_date):
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    total_yvals = []
+    reviewers_yvals = []
+    authors_yvals = []
+    total_set_of_contributors = set()
+    total_set_of_reviewers = set()
+    total_set_of_authors = set()
+    for date in date_range(start_date, end_date):
+        todays_total = set()
+        todays_reviewers = people_by_date[date]['reviews']
+        todays_authors = people_by_date[date]['contribs']
+        todays_total.update(todays_reviewers)
+        todays_total.update(todays_authors)
+        total_set_of_contributors.update(todays_total)
+        total_set_of_reviewers.update(todays_reviewers)
+        total_set_of_authors.update(todays_authors)
+        total_yvals.append(len(total_set_of_contributors))
+        reviewers_yvals.append(len(total_set_of_reviewers))
+        authors_yvals.append(len(total_set_of_authors))
+
+    lens = map(len, [total_yvals, reviewers_yvals, authors_yvals])
+    assert len(set(lens)) == 1, lens
+
+    pyplot.plot(x_vals, total_yvals, '-', color='red',
+               label="Total contributors", drawstyle="steps", linewidth=3)
+    pyplot.plot(x_vals, reviewers_yvals, '-', color='green',
+               label="Total reviewers", drawstyle="steps", linewidth=3)
+    pyplot.plot(x_vals, authors_yvals, '-', color='blue',
+               label="Total authors", drawstyle="steps", linewidth=3)
+    pyplot.title('Total contributors (as of %s)' % datetime.datetime.now().date())
+    pyplot.xlabel('Days Ago')
+    pyplot.ylabel('Contributors')
+    pyplot.legend(loc='upper left')
+    x_tick_locs = []
+    x_tick_vals = []
+    for i, d in enumerate(all_dates):
+        if i % 60:
+            continue
+        x_tick_locs.append(i)
+        x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
+    x_tick_vals.append(all_dates[-1])
+    pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
+    pyplot.grid(b=True, which='both', axis='both')
+    pyplot.xlim(-1, x_tick_locs[-1] + 1)
+    pyplot.grid(b=True, which='both', axis='both')
+    fig = pyplot.gcf()
+    fig.set_size_inches(24, 8)
+    fig.dpi = 200
+    fig.set_frameon(True)
+    fig.savefig('total_contribs2.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
 
 if __name__ == '__main__':
     # load patch info
@@ -422,3 +477,4 @@ if __name__ == '__main__':
     # draw graphs
     draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
     draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
+    draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
