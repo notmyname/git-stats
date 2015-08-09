@@ -1,92 +1,11 @@
-import json
-import subprocess
-import time
-import datetime
-import re
-import operator
 import sys
+import datetime
+import subprocess
 from collections import defaultdict
-
-from numpy import arange
+import json
+import re
 from matplotlib import pyplot
 
-# TODO: track contributor half-life
-# TODO: how long do patches stay in review (first proposal to merge time)
-# TODO: find how many one-off contributors we can support in one time block (map to review time?)
-
-def get_max_min_days_ago():
-    all_dates = subprocess.check_output(
-        'git log --reverse --format="%ad" --date=short', shell=True)
-    now = datetime.datetime.now()
-    oldest_date = now
-    newest_date = datetime.datetime.strptime('1970-01-01', '%Y-%m-%d')
-    for date in all_dates.split():
-        date = datetime.datetime.strptime(date.strip(), '%Y-%m-%d')
-        if date < oldest_date:
-            oldest_date = date
-        elif date > newest_date:
-            newest_date = date
-    oldest = now - oldest_date
-    newest = now - newest_date
-    return oldest.days, newest.days
-
-MAX_DAYS_AGO, MIN_DAYS_AGO = get_max_min_days_ago()
-FILENAME = 'contrib_stats.data'
-REVIEWS_FILENAME = 'swift_gerrit_history.patches'
-
-excluded_authors = (
-    'Jenkins <jenkins@review.openstack.org>',
-    'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
-    'OpenStack Jenkins <jenkins@openstack.org>',
-    'SwiftStack Cluster CI <openstack-ci@swiftstack.com>',
-    'Rackspace GolangSwift CI <mike+goci@weirdlooking.com>',
-    'Trivial Rebase <trivial-rebase@review.openstack.org>',
-    'Coraid CI <coraid-openstack-ci-all@mirantis.com>',
-)
-
-additional_mapping = (
-    # ('<tim@swiftstack.com>', '<tim.burke@gmail.com>'),
-)
-
-def get_one_day(days_ago):
-    cmd = ("git shortlog -es --before='@{%d days ago}' "
-            "--since='@{%d days ago}'" % (days_ago - 1, days_ago))
-    out = subprocess.check_output(cmd, shell=True).strip()
-    authors = set()
-    authors_by_count = defaultdict(int)
-    for line in out.split('\n'):
-        line = line.strip()
-        if line:
-            match = re.match(r'\d+\s+(.*)', line)
-            author = match.group(1)
-            author = author.decode('utf8')
-            if author not in excluded_authors:
-                authors.add(author)
-            authors_by_count[author] += 1
-    return authors, authors_by_count
-
-def get_data(max_days, min_days):
-    '''
-    returns a list of sets. the first element is the list of committers from the
-    first commit to the repo, and the last element is the list of committers from
-    yesterday.
-    '''
-    data = []
-    authors_by_count = defaultdict(int)
-    while max_days >= 0:
-        if max_days <= min_days:
-            print 'No newer data in VCS'
-            break
-        that_date = datetime.datetime.now() - datetime.timedelta(days=max_days)
-        that_date = that_date.strftime('%Y-%m-%d')
-        authors_for_day, by_count = get_one_day(max_days)
-        for a, c in by_count.items():
-            authors_by_count[a] += c
-        data.append((that_date, authors_for_day))
-        max_days -= 1
-        if max_days % 20 == 0:
-            print '%d days left...' % max_days
-    return data, authors_by_count
 
 class WindowQueue(object):
     def __init__(self, window_size):
@@ -118,43 +37,92 @@ class RollingSet(object):
         return len(self.all_els)
 
 
-def save_commits(contribs_by_days_ago, authors_by_count, filename):
-    listified = [(d, list(e)) for (d, e) in contribs_by_days_ago]
+def date_range(start_date, end_date, strings=True):
+    '''yields an inclusive list of dates'''
+    step = datetime.timedelta(days=1)
+    if isinstance(start_date, str):
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    if isinstance(end_date, str):
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    while start_date <= end_date:
+        if strings:
+            yield start_date.strftime('%Y-%m-%d')
+        else:
+            yield start_date
+        start_date += step
+
+def get_max_min_days_ago():
+    '''returns the first and last dates of activity in a repo'''
+    all_dates = subprocess.check_output(
+        'git log --reverse --format="%ad" --date=short', shell=True)
+    oldest_date = datetime.datetime.now()
+    newest_date = datetime.datetime.strptime('1970-01-01', '%Y-%m-%d')
+    for date in all_dates.split():
+        date = datetime.datetime.strptime(date.strip(), '%Y-%m-%d')
+        if date < oldest_date:
+            oldest_date = date
+        elif date > newest_date:
+            newest_date = date
+    return oldest_date.date(), newest_date.date()
+
+FIRST_DATE, LAST_DATE = get_max_min_days_ago()
+FILENAME = 'contrib_stats.data'
+REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+
+excluded_authors = (
+    'Jenkins <jenkins@review.openstack.org>',
+    'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
+    'OpenStack Jenkins <jenkins@openstack.org>',
+    'SwiftStack Cluster CI <openstack-ci@swiftstack.com>',
+    'Rackspace GolangSwift CI <mike+goci@weirdlooking.com>',
+    'Trivial Rebase <trivial-rebase@review.openstack.org>',
+    'Coraid CI <coraid-openstack-ci-all@mirantis.com>',
+    'Gerrit Code Review <review@openstack.org>',
+)
+
+def save_commits(contribs_by_date, authors_by_count, filename):
+    listified = [(d, list(e)) for (d, e) in contribs_by_date.items()]
     with open(filename, 'wb') as f:
         json.dump((listified, authors_by_count), f)
 
 def load_commits(filename):
     with open(filename, 'rb') as f:
         (listified, authors_by_count) = json.load(f)
-    contribs_by_days_ago = [(d, set(e)) for (d, e) in listified]
-    return contribs_by_days_ago, authors_by_count
+    contribs_by_date = {d: set(e) for (d, e) in listified}
+    return contribs_by_date, authors_by_count
 
+def get_one_day(date):
+    next_day = date + datetime.timedelta(days=1)
+    cmd = ("git shortlog -es --since='@{%s}' --before='@{%s}'"
+           % (date.strftime('%Y-%m-%d'),
+              next_day.strftime('%Y-%m-%d')))
+    out = subprocess.check_output(cmd, shell=True).strip()
+    authors = set()
+    authors_by_count = defaultdict(int)
+    for line in out.split('\n'):
+        line = line.strip()
+        if line:
+            match = re.match(r'\d+\s+(.*)', line)
+            author = match.group(1)
+            author = author.decode('utf8')
+            if author not in excluded_authors:
+                authors.add(author)
+            authors_by_count[author] += 1
+    return authors, authors_by_count
 
-# returns {unmapped person: mapped name email}
-def make_mapping():
-    mapped_people = {}
-    mailmap = {}
-    with open('.mailmap', 'rb') as f:
-        for line in f:
-            line = line.strip()
-            name_email, rest = line.split('>', 1)
-            name, email = name_email.rsplit(' ', 1)
-            email = email + '>'
-            real = '%s %s' % (name, email)
-            rest = rest.strip()
-            if '<' in rest:
-                rest = rest[rest.index('<'):]
-            else:
-                rest = email
-            mapped_people[rest] = real
-    for bad, good in additional_mapping:
-        mapped_people[bad] = good
-    return mapped_people
-
+def get_data(start_date, end_date):
+    data = defaultdict(set)
+    authors_by_count = defaultdict(int)
+    for date in date_range(start_date, end_date, strings=False):
+        authors_for_day, by_count = get_one_day(date)
+        for a, c in by_count.items():
+            authors_by_count[a] += c
+        data[date.strftime('%Y-%m-%d')].update(authors_for_day)
+        print date  # how do I print only every 20 days?
+    return data, authors_by_count
 
 def load_reviewers(filename):
-    reviewers = defaultdict(set)
-    mapping = make_mapping()
+    reviewers_by_date = defaultdict(set)
     with open(filename, 'rb') as f:
         for line in f:
             if line:
@@ -165,168 +133,190 @@ def load_reviewers(filename):
                 continue
             for review_comment in review_data['comments']:
                 when = review_comment['timestamp']
-                days_ago = datetime.timedelta(seconds=time.time() - when).days
+                when = datetime.datetime.utcfromtimestamp(when).strftime('%Y-%m-%d')
                 reviewer = review_comment['reviewer']
                 if 'email' not in reviewer:
                     continue
                 email = '<%s>' % reviewer['email']
                 name_email = '%s %s' % (reviewer['name'], email)
-                if email in mapping:
-                    name_email = mapping[email]
                 if name_email not in excluded_authors:
-                    reviewers[name_email].add(days_ago)
-    return reviewers
+                    reviewers_by_date[when].add(name_email)
+    return reviewers_by_date
 
-def make_one_range_plot_values(all_ranges, yval, all_x_vals, review_dates):
-    global_start = 9999999999
-    global_end = -global_start
-    if all_ranges is not None:
-        global_start = min(x[1] for x in all_ranges)
-        global_end = max(x[0] for x in all_ranges)
-    if review_dates is not None:
-        first_review = min(review_dates)
-        last_review = max(review_dates)
-        if first_review == last_review:
-            last_review += 1
-        global_start = min(global_start, first_review)
-        global_end = max(global_end, last_review)
-    global_range = range(global_start, global_end)
-    cumulative_x_vals = [None] * len(all_x_vals)
-    sparse_x_vals = [None] * len(all_x_vals)
-    review_x_vals = [None] * len(all_x_vals)
-    for i, x_val in enumerate(all_x_vals):
-        if all_ranges:
-            for run in all_ranges:
-                if x_val in range(min(run), max(run)):
-                    sparse_x_vals[i] = yval
-                    break
-        if x_val in global_range:
-            cumulative_x_vals[i] = yval
-        if review_dates:
-            if x_val in review_dates:
-                review_x_vals[i] = yval
-                review_x_vals[i+1] = yval
-    return cumulative_x_vals, sparse_x_vals, review_x_vals
+def map_people(unmapped_people):
+    mapped_people = set()
+    the_people_map = {
+        #'Bad Name <bad@email>': 'Good Name <good@email>'
+        'gholt <z-launchpad@brim.net>': 'Greg Holt <gholt@rackspace.com>',
+        'Mike Barton <mike-launchpad@weirdlooking.com>': 'Michael Barton <mike@weirdlooking.com>',
+        'Chmouel Boudjnah <chmouel@enovance.com>': 'Chmouel Boudjnah <chmouel@chmouel.com>',
+        'Maru Newby <mnewby@internap.com>': 'Maru Newby <marun@redhat.com>',
+        'Zhongyue Luo <zhongyue.nah@intel.com>': 'Zhongyue Luo <zhongyue.luo@intel.com>',
+        'James E. Blair <corvus@inaugust.com>': 'James E. Blair <jeblair@openstack.org>',
+        u'Juan J. Mart\xednez <juan@memset.com>': 'Juan J. Martinez <juan@memset.com>',
+        'Adrian Smith <adrian_f_smith@dell.com>': 'Adrian Smith <adrian@17od.com>',
+        'Victor Rodionov <victor.rodionov@nexenta.com>': 'Victor Rodionov <victor.ordaz@gmail.com>',
+        'dpdillinger <dan.dillinger@sonian.net>': 'Dan Dillinger <dan.dillinger@sonian.net>',
+        'Yu.Yang <alex890714@gmail.com>': 'Alex Yang <alex890714@gmail.com>',
+        'Clark Boylan <clark.boylan@gmail.com>': 'Clark Boylan <cboylan@sapwetik.org>',
+        'Riqiang Li <lrqrun@gmail.com>': 'Li Riqiang <lrqrun@gmail.com>',
+        'Andy McCrae <andy.mccrae@googleemail.com>': 'Andy McCrae <andy.mccrae@gmail.com>',
+        'Doug Hellmann <doug.hellmann@dreamhost.com>': 'Doug Hellmann <doug@doughellmann.com>',
+        'mail-zhang-yee <mail.zhang.yee@gmail.com>': 'Yee <mail.zhang.yee@gmail.com>',
+        'Peter Portante <peter.a.portante@gmail.com>': 'Peter Portante <peter.portante@redhat.com>',
+        'Kun Huang <gareth@unitedstack.com>': 'Kun Huang <gareth@openstacker.org>',
+        'Joe Gordon <jogo@cloudscaling.com>': 'Joe Gordon <joe.gordon0@gmail.com>',
+        'Edward Hope-Morley <edward.hope-morley@canonical.com>': 'Edward Hope-Morley <opentastic@gmail.com>',
+        'paul luse <paul.e.luse@intel.com>': 'Paul Luse <paul.e.luse@intel.com>',
+        'Newptone <xingchao@unitedstack.com>': 'Xingchao Yu <xingchao@unitedstack.com>',
+        'anticw <cw@f00f.org>': 'Chris Wedgewood <cw@f00f.org>',
+        'Chris Wedgwood <cw@f00f.org>': 'Chris Wedgewood <cw@f00f.org>',
+        'Aaron Rosen <arosen@nicira.com>': 'Aaron Rosen <aaronorosen@gmail.com>',
+        'Matthew Kassawara <mkassawara@gmail.com>': 'Matt Kassawara <mkassawara@gmail.com>',
+        'Madhuri Kumari <madhuri.rai07@gmail.com>': 'Madhuri Kumari <madhuri.kumari@nectechnologies.in>',
+        'James Page <james.page@canonical.com>': 'James Page <james.page@ubuntu.com>',
+        'Andreas Jaeger <jaegerandi@gmail.com>': 'Andreas Jaeger <aj@suse.de>',
+        'Jay S. Bryant <jsbryant@us.ibm.com>': 'Jay Bryant <jsbryant@us.ibm.com>',
+        'greghaynes <greg@greghaynes.net>': 'Gregory Haynes <greg@greghaynes.net>',
+        'Arnaud <arnaud.jost@ovh.net>': 'Arnaud JOST <arnaud.jost@pvh.net>',
+        'Mitsuhiro SHIGEMATSU <shigematsu.mitsuhiro@lab.ntt.co.jp>': 'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
+        'MITSUHIRO Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>': 'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
+        'Tim Burke <tim.burke@gmail.com>': 'Tim Burke <tim@swiftstack.com>',
+        'Michael MATUR <michael.matur@gmail.com>': 'Michael Matur <michael.matur@gmail.com>',
+        'janonymous <jaivish.kothari@nectechnologies.in>': 'Jaivish Kothari <jaivish.kothari@nectechnologies.in>',
+        'oshritf <oshritf@il.ibm.com>': 'Oshrit Feder <oshritf@il.ibm.com>',
+    }
+    for person in unmapped_people:
+        if person in the_people_map:
+            person = the_people_map[person]
+        mapped_people.add(person)
+    return mapped_people
 
-
-def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
-               active_window=14):
-    all_contribs = set()
-    totals = []
-    actives_windows = [(180, (365, 730)), (90, (180, 365)), (14, (30, 90))]
-    actives = {x: [] for (x, _) in actives_windows}
-    rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
-    actives_avg = {x: defaultdict(list) for (x, _) in actives_windows}
-    dtotal = []
-    dactive = []
-    contributor_activity = {}  # contrib -> [(start_date, end_date), ...]
-    contrib_activity_days = {}  # contrib -> [(start_days_ago, end_days_ago), ...]
-    for date, c in contribs_by_days_ago:
-        # redo reviewers as [(days_ago, set([c, c2, ...])), ...]
-        # so that we can include reviews in activity report?
-        end_window = datetime.datetime.strptime(date, '%Y-%m-%d') + \
-            datetime.timedelta(days=active_window)
-        end_window_days = (datetime.datetime.now() - end_window).days
-        start_date_days = (datetime.datetime.now() -
-                           datetime.datetime.strptime(date, '%Y-%m-%d')).days
-        date = str(date)
-        end_window = str(end_window.strftime('%Y-%m-%d'))
-        for person in c:
-            if person not in contributor_activity:
-                contributor_activity[person] = [(date, end_window)]
-                contrib_activity_days[person] = [(start_date_days,
-                                                  end_window_days)]
-            else:
-                last_range = contributor_activity[person][-1]
-                if datetime.datetime.strptime(date, '%Y-%m-%d') < \
-                        datetime.datetime.strptime(last_range[1], '%Y-%m-%d'):
-                    # we're still in the person's current active range
-                    new_range = (last_range[0], end_window)
-                    new_range_days = (contrib_activity_days[person][-1][0],
-                                      end_window_days)
-                    contributor_activity[person].pop()
-                    contrib_activity_days[person].pop()
-                else:
-                    # old range ended, make a new one
-                    new_range = (date, end_window)
-                    new_range_days = (start_date_days, end_window_days)
-                contributor_activity[person].append(new_range)
-                contrib_activity_days[person].append(new_range_days)
-        all_contribs |= c
-        totals.append(len(all_contribs))
-        for aw, rolling_avg_windows in actives_windows:
-            rolling_sets[aw].add(c)  # does this only work if dates are in order? what if some are missing?
-            actives[aw].append(len(rolling_sets[aw]))
-            for r_a_w in rolling_avg_windows:
-                denom = min(len(actives[aw]), r_a_w)
-                s = sum(actives[aw][-r_a_w:])
-                actives_avg[aw][r_a_w].append(float(s) / denom)
-
-    # get graphable ranges for each person
-    graphable_ranges = {}
+def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    graphable_data = {}
     order = []
-    bucket_size = 60
-    total_x_values = range(MAX_DAYS_AGO, MIN_DAYS_AGO-active_window, -1)
-    total_age = total_x_values[0] - total_x_values[-1]
-    total_people = set(contrib_activity_days.keys() + reviewers.keys())
-    for person in total_people:
-        days_ago_ranges = contrib_activity_days.get(person)
-        cumulative_x_vals, sparse_x_vals, review_x_vals = \
-            make_one_range_plot_values(
-                days_ago_ranges, 1, total_x_values, reviewers.get(person))
-        start_day = cumulative_x_vals.index(1)
-        count = sparse_x_vals.count(1)
-        danger_metric = 0.0
-        # find who's at risk of falling out (need to update for reviewers)
-        if count:
-            last_days_ago = days_ago_ranges[-1][-1]
-            avg_days_active_per_patch = count / float(authors_by_count[person])
-            danger_metric = last_days_ago / avg_days_active_per_patch
-            # at least one patch, active in the last 90 days, and it's been longer
-            # than normal since your last patch
-            if authors_by_count[person] > 1 and 1.5 < danger_metric < 5.0:
-                m = ('%s:\n\tlast active %s days ago (patches: %d, '
-                     'total days active: %s, avg activity per patch: %.2f, '
-                     'danger: %.2f)'
-                    ) % (person, last_days_ago, authors_by_count[person], count,
-                         avg_days_active_per_patch, danger_metric)
-                print m
-        order.append((start_day, danger_metric, person))
+    for person, data in dates_by_person.iteritems():
+        first_day = '9999-99-99'
+        last_day = '0000-00-00'
+        for key in data:
+            first_day = min(first_day, min(data[key]))
+            last_day = max(last_day, max(data[key]))
+        order.append((first_day, last_day, person))
     order.sort(reverse=True)
-    for _junk, danger_metric, person in order:
-        days_ago_ranges = contrib_activity_days.get(person)
-        yval = len(graphable_ranges)
-        cumulative_x_vals, sparse_x_vals, review_x_vals = \
-            make_one_range_plot_values(
-                days_ago_ranges, yval, total_x_values, reviewers.get(person))
-        graphable_ranges[person] = (yval, sparse_x_vals, cumulative_x_vals,
-                                    danger_metric, review_x_vals)
+    for first_day, last_day, person in order:
+        review_data = []
+        commit_data = []
+        cumulative_data = []
+        sparse_cumulative_data = []
+        yval = len(graphable_data)
+        for date in all_dates:
+            person_data = dates_by_person[person]
+            active_day = False
+            if date in person_data['contribs']:
+                commit_data.append(yval)
+                active_day = True
+            else:
+                commit_data.append(None)
+            if date in person_data['reviews']:
+                review_data.append(yval)
+                active_day = True
+            else:
+                review_data.append(None)
+            if first_day <= date <= last_day:
+                cumulative_data.append(yval)
+            else:
+                cumulative_data.append(None)
+            if active_day:
+                sparse_cumulative_data.append(yval)
+            else:
+                sparse_cumulative_data.append(None)
+        lens = map(len, [commit_data, review_data, cumulative_data, sparse_cumulative_data, x_vals])
+        assert len(set(lens)) == 1, '%r %s' % (lens, person)
+        graphable_data[person] = (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data)
 
-    xs = range(MAX_DAYS_AGO, MIN_DAYS_AGO, -1)
+    person_labels = []
+    for person, (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data) in graphable_data.iteritems():
+        name = person.split('<', 1)[0].strip()
+        person_labels.append((yval, name))
+        how_many_days_active = sparse_cumulative_data.count(yval)
+        try:
+            days_since_first_commit = len(x_vals) - commit_data.index(yval)
+        except ValueError:
+            days_since_first_commit = 0
+        try:
+            days_since_first_review = len(x_vals) - review_data.index(yval)
+        except ValueError:
+            days_since_first_review = 0
+        days_since_first = max(days_since_first_review, days_since_first_commit)
+        # since your first commit, how much of the life of the project have you been active?
+        percent_active = how_many_days_active / float(days_since_first)
+        rcolor = percent_active**2 * 0x7f + 0x7f
+        bcolor = 0x60
+        gcolor = 0
 
-    lens = map(len, [totals, xs])
-    assert len(set(lens)) == 1, lens
-
-    title_date = (datetime.datetime.now() - datetime.timedelta(days=MIN_DAYS_AGO)).date()
-
-    # graph active contribs
-    lookback = MAX_DAYS_AGO
-    for aw, rolling_avg_windows in actives_windows:
-        pyplot.plot(xs[-lookback:], actives[aw][-lookback:], '-', alpha=0.5,
-                    label="%d day activity window" % aw)
-        for r_a_w in rolling_avg_windows:
-            pyplot.plot(xs[-lookback:], actives_avg[aw][r_a_w][-lookback:], '-',
-                        label="%d day avg (%d)" % (r_a_w, aw), linewidth=3)
-    pyplot.title('Active contributors (as of %s)' % title_date)
-    pyplot.xlabel('Days Ago')
-    pyplot.ylabel('Contributors')
-    pyplot.legend(loc='upper left')
-    x_ticks = range(0, MAX_DAYS_AGO, 90)
-    pyplot.xticks(x_ticks, x_ticks)
+        pyplot.plot(x_vals, cumulative_data, linestyle='-',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color='#aaaaaa')
+        pyplot.plot(x_vals, commit_data, linestyle='-',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
+        pyplot.plot(x_vals, review_data, linestyle='-',
+                    label=person, linewidth=5, solid_capstyle="butt",
+                    alpha=1.0, color='#469bcf')  # color='#ce7927')
+    pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
+    pyplot.ylabel('Contributor')
+    person_labels.sort()
+    pyplot.yticks([p[0] for p in person_labels], [p[1] for p in person_labels])
+    pyplot.ylim(-1, person_labels[-1][0] + 1)
+    x_tick_locs = []
+    x_tick_vals = []
+    for i, d in enumerate(all_dates):
+        if i % 60:
+            continue
+        x_tick_locs.append(i)
+        x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
+    x_tick_vals.append(all_dates[-1])
+    pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
+    pyplot.xlim(-1, x_tick_locs[-1] + 1)
     pyplot.grid(b=True, which='both', axis='both')
-    pyplot.autoscale(enable=True, axis='x', tight=True)
+    vertical_size_per_person = 0.3
+    vertical_size = vertical_size_per_person * len(person_labels)
+    horizontal_size_per_day = 0.02
+    horizontal_size = horizontal_size_per_day * len(x_vals)
+    fig = pyplot.gcf()
+    fig.set_size_inches(horizontal_size, vertical_size)
+    fig.set_frameon(False)
+    fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
+def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_date, end_date):
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    for aw, rolling_avg_windows in actives_windows:
+        # pyplot.plot(x_vals, actives[aw], '-', alpha=0.3,
+        #             label="%d day activity total" % aw)
+        for r_a_w in rolling_avg_windows:
+            pyplot.plot(x_vals, actives_avg[aw][r_a_w], '-',
+                        label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
+    pyplot.title('Active contributors (as of %s)' % datetime.datetime.now().date())
+    pyplot.ylabel('Contributor Count')
+    pyplot.legend(loc='upper left')
+    x_tick_locs = []
+    x_tick_vals = []
+    for i, d in enumerate(all_dates):
+        if i % 60:
+            continue
+        x_tick_locs.append(i)
+        x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
+    x_tick_vals.append(all_dates[-1])
+    pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
+    pyplot.grid(b=True, which='both', axis='both')
+    pyplot.xlim(-1, x_tick_locs[-1] + 1)
     ax = pyplot.gca()
-    ax.invert_xaxis()
     fig = pyplot.gcf()
     fig.set_size_inches(24, 8)
     fig.dpi = 200
@@ -334,104 +324,157 @@ def make_graph(contribs_by_days_ago, authors_by_count, reviewers,
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    # graph total contributors
-    pyplot.plot(xs[-lookback:], totals[-lookback:], '-', color='red',
-               label="Total contributors", drawstyle="steps")
-    pyplot.title('Total contributors (as of %s)' % title_date)
+def draw_total_contributors_graph(people_by_date, start_date, end_date):
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    total_yvals = []
+    reviewers_yvals = []
+    authors_yvals = []
+    total_set_of_contributors = set()
+    total_set_of_reviewers = set()
+    total_set_of_authors = set()
+    for date in date_range(start_date, end_date):
+        todays_total = set()
+        todays_reviewers = people_by_date[date]['reviews']
+        todays_authors = people_by_date[date]['contribs']
+        todays_total.update(todays_reviewers)
+        todays_total.update(todays_authors)
+        total_set_of_contributors.update(todays_total)
+        total_set_of_reviewers.update(todays_reviewers)
+        total_set_of_authors.update(todays_authors)
+        total_yvals.append(len(total_set_of_contributors))
+        reviewers_yvals.append(len(total_set_of_reviewers))
+        authors_yvals.append(len(total_set_of_authors))
+
+    lens = map(len, [total_yvals, reviewers_yvals, authors_yvals])
+    assert len(set(lens)) == 1, lens
+
+    pyplot.plot(x_vals, total_yvals, '-', color='red',
+               label="Total contributors", drawstyle="steps", linewidth=3)
+    pyplot.plot(x_vals, reviewers_yvals, '-', color='green',
+               label="Total reviewers", drawstyle="steps", linewidth=3)
+    pyplot.plot(x_vals, authors_yvals, '-', color='blue',
+               label="Total authors", drawstyle="steps", linewidth=3)
+    pyplot.title('Total contributors (as of %s)' % datetime.datetime.now().date())
     pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
-    x_ticks = range(0, MAX_DAYS_AGO, 90)
-    pyplot.xticks(x_ticks, x_ticks)
+    x_tick_locs = []
+    x_tick_vals = []
+    for i, d in enumerate(all_dates):
+        if i % 60:
+            continue
+        x_tick_locs.append(i)
+        x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
+    x_tick_vals.append(all_dates[-1])
+    pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.grid(b=True, which='both', axis='both')
-    pyplot.autoscale(enable=True, axis='x', tight=True)
-    ax = pyplot.gca()
-    ax.invert_xaxis()
+    pyplot.xlim(-1, x_tick_locs[-1] + 1)
+    pyplot.grid(b=True, which='both', axis='both')
     fig = pyplot.gcf()
-    fig.set_size_inches(16, 4)
+    fig.set_size_inches(24, 8)
     fig.dpi = 200
     fig.set_frameon(True)
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
-    # graph contrib activity ranges
-    persons = []
-    for person, (i, person_days, cumulative_days, danger_metric, review_vals) in graphable_ranges.items():
-        how_many_days = person_days.count(i)
-        c = authors_by_count.get(person, 0)
-        name = person.split('<', 1)[0].strip()
-        persons.append((i, name + ' (%d, %.2f)' % (c, danger_metric)))
-        days_since_first = total_age - cumulative_days.index(i)
-        # since your first commit, how much of the life of the project have you been active?
-        rcolor = (min(how_many_days, days_since_first) / float(days_since_first)) * 0x7f
-        rcolor += 0x7f
-        bcolor = 0x60
-        gcolor = 0
-        pyplot.plot(total_x_values, review_vals, '-',
-                    label=person, linewidth=12, solid_capstyle="butt",
-                    alpha=1.0, color='#006400')
-        pyplot.plot(total_x_values, cumulative_days, '-',
-                    label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=0.3, color='#333333')
-        pyplot.plot(total_x_values, person_days, '-',
-                    label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
-    pyplot.title('Contributor Actvity (as of %s)' % title_date)
-    pyplot.xlabel('Days Ago')
-    pyplot.ylabel('Contributor')
-    persons.sort()
-    pyplot.yticks([p[0] for p in persons], [p[1] for p in persons])
-    x_ticks = range(0, MAX_DAYS_AGO, 60)
-    pyplot.xticks(x_ticks, x_ticks)
-    pyplot.grid(b=True, which='both', axis='both')
-    pyplot.ylim(-1, persons[-1][0] + 1)
-    pyplot.autoscale(enable=True, axis='x', tight=True)
-    ax = pyplot.gca()
-    ax.invert_xaxis()
-    fig = pyplot.gcf()
-    fig.dpi = 200
-    vertical_size_per_person = 0.25
-    vertical_size = vertical_size_per_person * len(persons)
-    horizontal_size_per_day = 0.02
-    horizontal_size = horizontal_size_per_day * len(total_x_values)
-    fig.set_size_inches(horizontal_size, vertical_size)
-    fig.set_frameon(False)
-    fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
-    pyplot.close()
-
 
 if __name__ == '__main__':
-    reviewers = load_reviewers(REVIEWS_FILENAME)
+    # load patch info
     try:
-        contribs_by_days_ago, authors_by_count = load_commits(FILENAME)
+        contribs_by_date, authors_by_count = load_commits(FILENAME)
         # update the data first
-        most_recent_date = max(x[0] for x in contribs_by_days_ago)
-        days_ago = (datetime.datetime.now() - \
-            datetime.datetime.strptime(most_recent_date, '%Y-%m-%d')).days - 1
-        if days_ago > MIN_DAYS_AGO:
-            print 'Updating previous data with %d days...' % days_ago
-            recent_data, new_by_count = get_data(days_ago, MIN_DAYS_AGO)
-            contribs_by_days_ago.extend(recent_data)
+        most_recent_date = max(contribs_by_date.keys())
+        most_recent_date = datetime.datetime.strptime(
+            most_recent_date, '%Y-%m-%d').date()
+        print 'Last date found in data file:', most_recent_date
+        print 'Last date found in source repo:', LAST_DATE
+        if most_recent_date < LAST_DATE:
+            print 'Updating previous data with data since %s...' % most_recent_date
+            recent_data, new_by_count = get_data(most_recent_date, LAST_DATE)
+            for date in recent_data:
+                if date in contribs_by_date:
+                    contribs_by_date[date].update(recent_data[date])
+                else:
+                    contribs_by_date[date] = recent_data[date]
             for a, c in new_by_count.items():
                 if a not in authors_by_count:
                     authors_by_count[a] = 0
                 authors_by_count[a] += c
-            save_commits(contribs_by_days_ago, authors_by_count, FILENAME)
+            save_commits(contribs_by_date, authors_by_count, FILENAME)
         else:
             print 'Data file (%s) is up to date.' % FILENAME
-    except (IOError, ValueError):
-        contribs_by_days_ago, authors_by_count = get_data(MAX_DAYS_AGO, MIN_DAYS_AGO)
-        save_commits(contribs_by_days_ago, authors_by_count, FILENAME)
+    except (IOError, ValueError), exc:
+        print exc
+        contribs_by_date, authors_by_count = get_data(FIRST_DATE, LAST_DATE)
+        save_commits(contribs_by_date, authors_by_count, FILENAME)
 
-    aw = 14
-    try:
-        aw = sys.argv[1]
-        try:
-            aw = int(aw)
-        except ValueError:
-            print 'bad active window given (%s). defaulting to 14' % aw
-    except IndexError:
-        aw = 14
+    # load review info
+    reviewers_by_date = load_reviewers(REVIEWS_FILENAME)
 
-    print 'Using activity window of %d' % aw
-    make_graph(contribs_by_days_ago, authors_by_count, reviewers, aw)
+    # combine data sources down to one set of contributors and dates
+    people_by_date = defaultdict(lambda: defaultdict(set))
+    dates_by_person = defaultdict(lambda: defaultdict(set))
+    first_contrib_date = min(contribs_by_date.keys())
+    first_review_date = min(reviewers_by_date.keys())
+    global_first_date = str(min(first_contrib_date, first_review_date))
+    last_contrib_date = max(contribs_by_date.keys())
+    last_review_date = max(reviewers_by_date.keys())
+    global_last_date = str(max(last_contrib_date, last_review_date))
+    print 'Global first date is:', global_first_date
+    print 'Global last date is:', global_last_date
+    unique_reviewer_set = set()
+
+    actives_windows = [
+        # (days, (rolling_avg_span, ...))
+        (30, (180, 365)),
+        (7, (30, 180)),
+    ]
+    actives = {x: [] for (x, _) in actives_windows}
+    rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
+    actives_avg = {x: defaultdict(list) for (x, _) in actives_windows}
+
+    for date in date_range(global_first_date, global_last_date):
+        contribs = contribs_by_date.get(date, set())
+        reviews = reviewers_by_date.get(date, set())
+        contribs = map_people(contribs)
+        reviews = map_people(reviews)
+        people_by_date[date]['contribs'] = contribs
+        people_by_date[date]['reviews'] = reviews
+        unique_reviewer_set.update(reviews)
+        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+        contrib_window = datetime.timedelta(days=14)
+        review_window = datetime.timedelta(days=5)
+        for person in contribs:
+            end_date = date_obj + contrib_window
+            for d in date_range(date, end_date):
+                dates_by_person[person]['contribs'].add(d)
+                people_by_date[d]['contribs'].add(person)
+        for person in reviews:
+            end_date = date_obj + review_window
+            for d in date_range(date, end_date):
+                dates_by_person[person]['reviews'].add(d)
+                people_by_date[d]['reviews'].add(person)
+
+        # Calculate the total active contributor count for a given
+        # number of days. Then also make a moving average of that.
+        for aw, rolling_avg_windows in actives_windows:
+            active_today = set()
+            active_today.update(people_by_date[date].get('contribs', set()))
+            active_today.update(people_by_date[date].get('reviews', set()))
+            rolling_sets[aw].add(active_today)
+            actives[aw].append(len(rolling_sets[aw]))
+            for r_a_w in rolling_avg_windows:
+                denom = min(len(actives[aw]), r_a_w)
+                s = sum(actives[aw][-r_a_w:])
+                actives_avg[aw][r_a_w].append(float(s) / denom)
+
+    print len(authors_by_count), 'patch authors found'
+    print len(unique_reviewer_set), 'review commentors found'
+    print len(dates_by_person), 'total unique contributors found'
+
+    # draw graphs
+    draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
+    draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
+    draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
