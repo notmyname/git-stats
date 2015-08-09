@@ -256,15 +256,15 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         bcolor = 0x60
         gcolor = 0
 
-        pyplot.plot(x_vals, cumulative_data, linestyle='-', drawstyle='steps-pre',
-                    label=person, linewidth=2, solid_capstyle="butt",
-                    alpha=0.5, color='#333333')
-        pyplot.plot(x_vals, commit_data, linestyle='-', drawstyle='steps-pre',
+        pyplot.plot(x_vals, cumulative_data, linestyle='-',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color='#aaaaaa')
+        pyplot.plot(x_vals, commit_data, linestyle='-',
                     label=person, linewidth=10, solid_capstyle="butt",
                     alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
-        pyplot.plot(x_vals, review_data, linestyle='-', drawstyle='steps-pre',
+        pyplot.plot(x_vals, review_data, linestyle='-',
                     label=person, linewidth=5, solid_capstyle="butt",
-                    alpha=1.0, color='#00a400')
+                    alpha=1.0, color='#469bcf')  # color='#ce7927')
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
     pyplot.ylabel('Contributor')
     person_labels.sort()
@@ -282,7 +282,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
     pyplot.grid(b=True, which='both', axis='both')
-    vertical_size_per_person = 0.25
+    vertical_size_per_person = 0.3
     vertical_size = vertical_size_per_person * len(person_labels)
     horizontal_size_per_day = 0.02
     horizontal_size = horizontal_size_per_day * len(x_vals)
@@ -296,7 +296,7 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
     for aw, rolling_avg_windows in actives_windows:
-        # pyplot.plot(x_vals, actives[aw], '-', alpha=0.5,
+        # pyplot.plot(x_vals, actives[aw], '-', alpha=0.3,
         #             label="%d day activity total" % aw)
         for r_a_w in rolling_avg_windows:
             pyplot.plot(x_vals, actives_avg[aw][r_a_w], '-',
@@ -427,9 +427,9 @@ if __name__ == '__main__':
     unique_reviewer_set = set()
 
     actives_windows = [
-        # (180, (365, 730)),
-        # (90, (180, 365)),
-        (7, (30, 90, 180)),
+        # (days, (rolling_avg_span, ...))
+        (30, (180, 365)),
+        (7, (30, 180)),
     ]
     actives = {x: [] for (x, _) in actives_windows}
     rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
