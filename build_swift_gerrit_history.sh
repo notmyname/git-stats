@@ -1,19 +1,37 @@
 #/bin/bash
 
-ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON project:openstack/swift branch:master --comments limit:500 >swift_gerrit_history.patches
-
-
-LAST=`tail -20 swift_gerrit_history.patches | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
-
+# grab comments
+PATCHES="swift_gerrit_history.patches"
+QUERY="project:openstack/swift branch:master --comments"
+ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
+LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
 OLDLAST=''
-
 while [[ $OLDLAST != $LAST ]]; do
     OLDLAST=$LAST
+    ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY resume_sortkey:$LAST >>$PATCHES
+    LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
+done
 
+# grab open patches (that aren't WIP)
+PATCHES="swift-open.patches"
+QUERY="project:openstack/swift branch:master status:open limit:500 NOT label:Workflow\<=-1"
+ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
+LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
+OLDLAST=''
+while [[ $OLDLAST != $LAST ]]; do
+    OLDLAST=$LAST
+    ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY resume_sortkey:$LAST >>$PATCHES
+    LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
+done
 
-    ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON project:openstack/swift branch:master --comments limit:500 resume_sortkey:$LAST >>swift_gerrit_history.patches
-
-    LAST=`tail -20 swift_gerrit_history.patches | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
-
-    echo $LAST, $OLDLAST
+# grab closed patches
+PATCHES="swift-closed.patches"
+QUERY="project:openstack/swift branch:master status:closed NOT label:Workflow\<=-1"
+ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
+LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
+OLDLAST=''
+while [[ $OLDLAST != $LAST ]]; do
+    OLDLAST=$LAST
+    ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY resume_sortkey:$LAST >>$PATCHES
+    LAST=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep sortKey | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
 done
