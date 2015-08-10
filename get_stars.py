@@ -6,56 +6,67 @@ import subprocess
 import shlex
 import json
 import sys
-
-GERRIT_USERNAME = 'notmyname'
-try:
-    GERRIT_USERNAME = sys.argv[1]
-except IndexError:
-    pass
+from collections import Counter
 
 cmd = (
-'/usr/bin/ssh -p 29418 %s@review.openstack.org \'gerrit query '
-'--format JSON '
-'(starredby:notmyname'
-#' OR starredby:torgomatic'
-#' OR starredby:cschwede'
-#' OR starredby:"alistair.coles@hp.com"'
-#' OR starredby:"darrell@swiftstack.com"'
-#' OR starredby:"david.goetz@rackspace.com"'
-#' OR starredby:"greglange@gmail.com"'
-#' OR starredby:"matt@oliver.net.au"'
-#' OR starredby:"mike@weirdlooking.com"'
-#' OR starredby:"zaitcev@kotori.zaitcev.us"'
-#' OR starredby:"paul.e.luse@intel.com"'
-')\''
-) % GERRIT_USERNAME
+'/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '
+'--format JSON starredby:"%s"\''
+)
 
-args = shlex.split(cmd)
-p = subprocess.Popen(args, stdout=subprocess.PIPE)
-raw, _ = p.communicate()
-starred = []
-for line in raw.split('\n'):
-    try:
-        patch = json.loads(line)
-    except ValueError:
-        # last line
-        break
-    try:
-        subject = patch['subject']
-        limit = 50
-        if len(subject) > limit:
-            subject = subject[:(limit - 3)] + '...'
-        owner = patch['owner']['name']
-        starred.append({'owner': owner.title(),
-                        'subject': subject,
-                        'url': patch['url'],
-                        'number': patch['number'],
-                        'status': patch['status']})
-    except KeyError:
-        # last line
-        pass
+core_emails = (
+    "me@not.mn",
+    "me@not.mn",
+    "sam@swiftstack.com",
+    "cschwede@redhat.com",
+    "clay.gerrard@gmail.com",
+    "alistair.coles@hp.com",
+    "darrell@swiftstack.com",
+    "david.goetz@rackspace.com",
+    "greglange@gmail.com",
+    "matt@oliver.net.au",
+    "mike@weirdlooking.com",
+    "zaitcev@kotori.zaitcev.us",
+    "paul.e.luse@intel.com",
+    "tsuyuzaki.kota@lab.ntt.co.jp",
+    "thiago@redhat.com",
+    "joel.wright@sohonet.com",
+)
 
+all_stars = []
+for email in core_emails:
+    args = shlex.split(cmd % email)
+    p = subprocess.Popen(args, stdout=subprocess.PIPE)
+    raw, _ = p.communicate()
+    starred = []
+    for line in raw.split('\n'):
+        try:
+            patch = json.loads(line)
+        except ValueError:
+            # last line
+            break
+        try:
+            subject = patch['subject']
+            limit = 50
+            if len(subject) > limit:
+                subject = subject[:(limit - 3)] + '...'
+            owner = patch['owner']['name']
+            starred.append((patch['url'], subject, owner.title(), patch['status']))
+            # starred.append({'owner': owner.title(),
+            #                 'subject': subject,
+            #                 'url': patch['url'],
+            #                 'number': patch['number'],
+            #                 'status': patch['status']})
+        except KeyError:
+            # last line
+            pass
+    all_stars.extend(starred)
 
-template = '%(subject)s (%(owner)s) - patch %(number)s - (%(status)s)'
-for item in starred:
-    print template % item
+# so now that we have the starred patches, count them
+ctr = Counter(all_stars)
+ordered = ctr.most_common()
+template = '%s (%s) - %s - (count: %s)'
+for patch, count in ordered:
+    if count <= 1:
+        continue
+    url, subject, owner, status = patch
+    print template % (subject, owner, url, count)
