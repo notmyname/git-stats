@@ -51,11 +51,6 @@ for email in core_emails:
                 subject = subject[:(limit - 3)] + '...'
             owner = patch['owner']['name']
             starred.append((patch['url'], subject, owner.title(), patch['status']))
-            # starred.append({'owner': owner.title(),
-            #                 'subject': subject,
-            #                 'url': patch['url'],
-            #                 'number': patch['number'],
-            #                 'status': patch['status']})
         except KeyError:
             # last line
             pass
