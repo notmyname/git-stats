@@ -64,6 +64,13 @@ with open(patches_input) as f:
     for line in f:
         parsed = json.loads(line)
         try:
+            if parsed['id'] in ('I755b62bb4d0110211a38db2af010178d8ae7aa09', # spurious comment on abandoned patch
+                                'I54d54eb8984d6bca4be912e7451f82e11b2db6ca', # db backends
+                                'Ia86f8b9b8886cc53ab6bb58cf117fe4c8d2a3903', # container acl headers
+                                'I45748c9d3907b9e50cd7a70047d669cb36dac526', # containeralias middleware
+                                'I3c82f8c0e7eafa3fcfc4385c9a240b14bc766ead', # data mingration
+                               ):
+                continue
             owner = parsed['owner']['email']
             start = int(parsed['createdOn'])
             if parsed['open']:
@@ -75,7 +82,7 @@ with open(patches_input) as f:
             x = end - start
             if x > biggest:
                 biggest = x
-                big = parsed
+                big = (parsed['subject'], parsed['id'])
         except KeyError:
             pass  # last line is gerrit query stats
 
@@ -91,7 +98,6 @@ print 'median: %s' % str(datetime.timedelta(seconds=median(all_durations)))
 print 'std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(all_durations)))
 print str(datetime.timedelta(seconds=biggest))
 print big
-
 
 # how many patches open
 # patch that is the longest since any feedback
