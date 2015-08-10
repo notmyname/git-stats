@@ -8,3 +8,10 @@ echo
 
 echo "Closed Patches Stats:"
 ./patches_parser.py swift-closed.patches
+
+
+echo
+echo
+
+echo "Total Patches Stats:"
+./patches_parser.py swift-closed.patches swift-open.patches

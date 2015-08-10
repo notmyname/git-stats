@@ -10,11 +10,10 @@ from collections import Counter
 
 cmd = (
 '/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '
-'--format JSON starredby:"%s"\''
+'--format JSON starredby:"%s" status:open\''
 )
 
 core_emails = (
-    "me@not.mn",
     "me@not.mn",
     "sam@swiftstack.com",
     "cschwede@redhat.com",
