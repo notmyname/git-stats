@@ -252,19 +252,19 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         days_since_first = max(days_since_first_review, days_since_first_commit)
         # since your first commit, how much of the life of the project have you been active?
         percent_active = how_many_days_active / float(days_since_first)
-        rcolor = percent_active**2 * 0x7f + 0x7f
+        gcolor = percent_active**2 * 0x7f + 0x7f
         bcolor = 0x60
-        gcolor = 0
+        rcolor = 0
 
         pyplot.plot(x_vals, cumulative_data, linestyle='-',
-                    label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=1.0, color='#aaaaaa')
+                    label=person, linewidth=1, solid_capstyle="butt",
+                    alpha=1.0, color='#333333')
         pyplot.plot(x_vals, commit_data, linestyle='-',
                     label=person, linewidth=10, solid_capstyle="butt",
                     alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
         pyplot.plot(x_vals, review_data, linestyle='-',
                     label=person, linewidth=5, solid_capstyle="butt",
-                    alpha=1.0, color='#469bcf')  # color='#ce7927')
+                    alpha=1.0, color='#000000')  # color='#469bcf')
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
     pyplot.ylabel('Contributor')
     person_labels.sort()
@@ -311,8 +311,6 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
             continue
         x_tick_locs.append(i)
         x_tick_vals.append(d)
-    x_tick_locs.append(len(all_dates))
-    x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.grid(b=True, which='both', axis='both')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
