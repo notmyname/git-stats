@@ -32,6 +32,7 @@ core_emails = (
 )
 
 all_stars = []
+subject_len_limit = 50
 for email in core_emails:
     args = shlex.split(cmd % email)
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -45,11 +46,10 @@ for email in core_emails:
             break
         try:
             subject = patch['subject']
-            limit = 50
-            if len(subject) > limit:
-                subject = subject[:(limit - 3)] + '...'
+            if len(subject) > subject_len_limit:
+                subject = subject[:(subject_len_limit - 3)] + '...'
             owner = patch['owner']['name']
-            starred.append((patch['url'], subject, owner.title(), patch['status']))
+            starred.append((patch['number'], subject, owner.title(), patch['status']))
         except KeyError:
             # last line
             pass
@@ -62,5 +62,5 @@ template = '%s (%s) - %s - (count: %s)'
 for patch, count in ordered:
     if count <= 1:
         continue
-    url, subject, owner, status = patch
-    print template % (subject, owner, url, count)
+    number, subject, owner, status = patch
+    print template % (subject, owner, number, count)

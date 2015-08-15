@@ -179,12 +179,15 @@ def map_people(unmapped_people):
         'Jay S. Bryant <jsbryant@us.ibm.com>': 'Jay Bryant <jsbryant@us.ibm.com>',
         'greghaynes <greg@greghaynes.net>': 'Gregory Haynes <greg@greghaynes.net>',
         'Arnaud <arnaud.jost@ovh.net>': 'Arnaud JOST <arnaud.jost@pvh.net>',
-        'Mitsuhiro SHIGEMATSU <shigematsu.mitsuhiro@lab.ntt.co.jp>': 'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
-        'MITSUHIRO Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>': 'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
+        'Mitsuhiro SHIGEMATSU <shigematsu.mitsuhiro@lab.ntt.co.jp>': \
+            'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
+        'MITSUHIRO Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>': \
+            'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
         'Tim Burke <tim.burke@gmail.com>': 'Tim Burke <tim@swiftstack.com>',
         'Michael MATUR <michael.matur@gmail.com>': 'Michael Matur <michael.matur@gmail.com>',
         'janonymous <jaivish.kothari@nectechnologies.in>': 'Jaivish Kothari <jaivish.kothari@nectechnologies.in>',
         'oshritf <oshritf@il.ibm.com>': 'Oshrit Feder <oshritf@il.ibm.com>',
+        'litong01 <litong01@us.ibm.com>': 'Tong Li <litong01@us.ibm.com>',
     }
     for person in unmapped_people:
         if person in the_people_map:
@@ -277,8 +280,9 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
             continue
         x_tick_locs.append(i)
         x_tick_vals.append(d)
-    x_tick_locs.append(len(all_dates))
-    x_tick_vals.append(all_dates[-1])
+    if len(all_dates) - x_tick_locs[-1] > 30:
+        x_tick_locs.append(len(all_dates))
+        x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
     pyplot.grid(b=True, which='both', axis='both')
@@ -311,6 +315,9 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
             continue
         x_tick_locs.append(i)
         x_tick_vals.append(d)
+    if len(all_dates) - x_tick_locs[-1] > 30:
+        x_tick_locs.append(len(all_dates))
+        x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.grid(b=True, which='both', axis='both')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
@@ -364,8 +371,9 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
             continue
         x_tick_locs.append(i)
         x_tick_vals.append(d)
-    x_tick_locs.append(len(all_dates))
-    x_tick_vals.append(all_dates[-1])
+    if len(all_dates) - x_tick_locs[-1] > 30:
+        x_tick_locs.append(len(all_dates))
+        x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.grid(b=True, which='both', axis='both')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
