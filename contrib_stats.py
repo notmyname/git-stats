@@ -255,23 +255,28 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         days_since_first = max(days_since_first_review, days_since_first_commit)
         # since your first commit, how much of the life of the project have you been active?
         percent_active = how_many_days_active / float(days_since_first)
-        gcolor = percent_active**2 * 0x7f + 0x7f
-        bcolor = 0x60
-        rcolor = 0
+        rcolor = percent_active * 0xff
+        bcolor = 0
+        gcolor = 0
 
-        pyplot.plot(x_vals, cumulative_data, linestyle='-',
-                    label=person, linewidth=1, solid_capstyle="butt",
-                    alpha=1.0, color='#333333')
+        # idea: make cumulative data as the fron at colored based on activity
+        # remove coloring commits based on activity
         pyplot.plot(x_vals, commit_data, linestyle='-',
                     label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color='#0000ff')
+        pyplot.plot(x_vals, cumulative_data, linestyle='-',
+                    label=person, linewidth=3, solid_capstyle="butt",
                     alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
         pyplot.plot(x_vals, review_data, linestyle='-',
                     label=person, linewidth=5, solid_capstyle="butt",
-                    alpha=1.0, color='#000000')  # color='#469bcf')
+                    alpha=1.0, color='#337f33')  # color='#469bcf')
+        label_xval = cumulative_data.index(yval) - 3
+        pyplot.annotate(name, xy=(label_xval, yval - 0.25), horizontalalignment='right')
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
-    pyplot.ylabel('Contributor')
+    # pyplot.ylabel('Contributor')
     person_labels.sort()
-    pyplot.yticks([p[0] for p in person_labels], [p[1] for p in person_labels])
+    # pyplot.yticks([p[0] for p in person_labels], ['' for p in person_labels])
+    pyplot.yticks([], [])
     pyplot.ylim(-1, person_labels[-1][0] + 1)
     x_tick_locs = []
     x_tick_vals = []
