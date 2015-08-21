@@ -80,6 +80,40 @@ excluded_authors = (
     'Gerrit Code Review <review@openstack.org>',
 )
 
+RELEASE_DATES = (
+    '2010-07-19', # austin, 1.0.0
+    '2011-04-15', # cactus, 1.3.0
+    '2011-05-27', # 1.4.0
+    '2011-06-14', # 1.4.1
+    '2011-07-25', # 1.4.2
+    '2011-09-12', # diablo, 1.4.3
+    '2011-11-24', # 1.4.4
+    '2012-01-04', # 1.4.5
+    '2012-02-08', # 1.4.6
+    '2012-03-09', # 1.4.7
+    '2012-03-22', # essex, 1.4.8
+    '2012-06-05', # 1.5.0
+    '2012-08-06', # 1.6.0
+    # '2012-09-13', # 1.7.0
+    # '2012-09-20', # 1.7.2
+    '2012-09-26', # folsom, 1.7.4
+    '2012-11-13', # 1.7.5
+    '2013-04-04', # grizzly, 1.8.0
+    '2013-07-02', # 1.9.0
+    '2013-08-13', # 1.9.1
+    '2013-10-17', # havana, 1.10.0
+    '2013-12-12', # 1.11.0
+    '2014-01-28', # 1.12.0
+    '2014-03-03', # 1.13.0
+    '2014-04-17', # icehouse, 1.13.1
+    '2014-07-07', # 2.0.0
+    '2014-09-01', # 2.1.0
+    '2014-10-16', # juno, 2.2.0
+    '2014-12-19', # 2.2.1
+    '2015-02-02', # 2.2.2
+    '2015-04-30', # kilo, 2.3.0
+)
+
 def save_commits(contribs_by_date, authors_by_count, filename):
     listified = [(d, list(e)) for (d, e) in contribs_by_date.items()]
     with open(filename, 'wb') as f:
@@ -258,6 +292,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         rcolor = percent_active * 0xff
         bcolor = 0
         gcolor = 0
+        activity_color = '#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor)
 
         # idea: make cumulative data as the fron at colored based on activity
         # remove coloring commits based on activity
@@ -266,38 +301,38 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
                     alpha=1.0, color='#0000ff')
         pyplot.plot(x_vals, cumulative_data, linestyle='-',
                     label=person, linewidth=3, solid_capstyle="butt",
-                    alpha=1.0, color='#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor))
+                    alpha=1.0, color='#999999')
         pyplot.plot(x_vals, review_data, linestyle='-',
                     label=person, linewidth=5, solid_capstyle="butt",
-                    alpha=1.0, color='#337f33')  # color='#469bcf')
+                    alpha=1.0, color='#339933')  # color='#469bcf')
         label_xval = cumulative_data.index(yval) - 3
-        pyplot.annotate(name, xy=(label_xval, yval - 0.25), horizontalalignment='right')
+        pyplot.annotate(name, xy=(label_xval, yval - 0.25), horizontalalignment='right', color=activity_color)
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
-    # pyplot.ylabel('Contributor')
-    person_labels.sort()
-    # pyplot.yticks([p[0] for p in person_labels], ['' for p in person_labels])
     pyplot.yticks([], [])
-    pyplot.ylim(-1, person_labels[-1][0] + 1)
+    person_labels.sort()
+    pyplot.ylim(0, person_labels[-1][0] + 1)
     x_tick_locs = []
     x_tick_vals = []
     for i, d in enumerate(all_dates):
-        if i % 60:
-            continue
-        x_tick_locs.append(i)
-        x_tick_vals.append(d)
+        if d in RELEASE_DATES:
+            pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+        if not i % 60:
+            x_tick_locs.append(i)
+            x_tick_vals.append(d)
     if len(all_dates) - x_tick_locs[-1] > 30:
         x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
-    pyplot.grid(b=True, which='both', axis='both')
+    pyplot.grid(b=True, which='both', axis='x')
     vertical_size_per_person = 0.3
     vertical_size = vertical_size_per_person * len(person_labels)
     horizontal_size_per_day = 0.02
     horizontal_size = horizontal_size_per_day * len(x_vals)
+    ax = pyplot.gca()
+    ax.set_frame_on(False)
     fig = pyplot.gcf()
     fig.set_size_inches(horizontal_size, vertical_size)
-    fig.set_frameon(False)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
@@ -305,8 +340,6 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
     for aw, rolling_avg_windows in actives_windows:
-        # pyplot.plot(x_vals, actives[aw], '-', alpha=0.3,
-        #             label="%d day activity total" % aw)
         for r_a_w in rolling_avg_windows:
             pyplot.plot(x_vals, actives_avg[aw][r_a_w], '-',
                         label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
@@ -316,10 +349,11 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     x_tick_locs = []
     x_tick_vals = []
     for i, d in enumerate(all_dates):
-        if i % 60:
-            continue
-        x_tick_locs.append(i)
-        x_tick_vals.append(d)
+        if d in RELEASE_DATES:
+            pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+        if not i % 60:
+            x_tick_locs.append(i)
+            x_tick_vals.append(d)
     if len(all_dates) - x_tick_locs[-1] > 30:
         x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
@@ -372,10 +406,11 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     x_tick_locs = []
     x_tick_vals = []
     for i, d in enumerate(all_dates):
-        if i % 60:
-            continue
-        x_tick_locs.append(i)
-        x_tick_vals.append(d)
+        if d in RELEASE_DATES:
+            pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+        if not i % 60:
+            x_tick_locs.append(i)
+            x_tick_vals.append(d)
     if len(all_dates) - x_tick_locs[-1] > 30:
         x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
