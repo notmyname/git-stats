@@ -7,7 +7,7 @@ ignored_authors = [  # known bots, not real people
     ('Jenkins', 'jenkins@review.openstack.org'),
 ]
 
-authors = [x.strip() for x in open('/Users/john/Documents/swift/AUTHORS', 'rb').readlines()]
+authors = [x.strip() for x in open(sys.argv[2], 'rb').readlines()]
 author_by_name = {}
 author_by_email = {}
 for line in authors:
@@ -20,7 +20,7 @@ for line in authors:
     author_by_email[email] = name
     author_by_name[name] = email
 
-authors = [x.strip() for x in open('vcs_authors', 'rb').readlines()]
+authors = [x.strip() for x in open(sys.argv[1], 'rb').readlines()]
 vcs_authors = []
 for line in authors:
     name, email = line.split('<')
