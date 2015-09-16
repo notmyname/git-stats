@@ -112,7 +112,6 @@ RELEASE_DATES = (
     '2014-12-19', # 2.2.1
     '2015-02-02', # 2.2.2
     '2015-04-30', # kilo, 2.3.0
-    '2015-09-01', # 2.4.0
 )
 
 def save_commits(contribs_by_date, authors_by_count, filename):
@@ -148,6 +147,8 @@ def get_one_day(date):
 def get_data(start_date, end_date):
     data = defaultdict(set)
     authors_by_count = defaultdict(int)
+    # consider replacing with
+    # git rev-list --pretty=format:"%aN <%aE> %aI" HEAD | grep -v commit
     for date in date_range(start_date, end_date, strings=False):
         authors_for_day, by_count = get_one_day(date)
         for a, c in by_count.items():
@@ -399,8 +400,7 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     ax = pyplot.gca()
     fig = pyplot.gcf()
     fig.set_size_inches(24, 8)
-    fig.dpi = 200
-    fig.set_frameon(True)
+    fig.set_frameon(False)
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
@@ -456,8 +456,6 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     pyplot.grid(b=True, which='both', axis='both')
     fig = pyplot.gcf()
     fig.set_size_inches(24, 8)
-    fig.dpi = 200
-    fig.set_frameon(True)
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
@@ -504,8 +502,9 @@ if __name__ == '__main__':
     last_contrib_date = max(contribs_by_date.keys())
     last_review_date = max(reviewers_by_date.keys())
     global_last_date = str(max(last_contrib_date, last_review_date))
-    print 'Global first date is:', global_first_date
-    print 'Global last date is:', global_last_date
+    msg = []
+    msg.append('Global first date is: %s' % global_first_date)
+    msg.append('Global last date is: %s' % global_last_date)
     unique_reviewer_set = set()
 
     actives_windows = [
@@ -552,9 +551,11 @@ if __name__ == '__main__':
                 s = sum(actives[aw][-r_a_w:])
                 actives_avg[aw][r_a_w].append(float(s) / denom)
 
-    print len(authors_by_count), 'patch authors found'
-    print len(unique_reviewer_set), 'review commentors found'
-    print len(dates_by_person), 'total unique contributors found'
+    msg.append('%d patch authors found' % len(authors_by_count))
+    msg.append('%d review commentors found' % len(unique_reviewer_set))
+    msg.append('%d total unique contributors found' % len(dates_by_person))
+    msg = '\n'.join(msg)
+    print msg
 
     # draw graphs
     draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
