@@ -41,9 +41,9 @@ def date_range(start_date, end_date, strings=True):
     '''yields an inclusive list of dates'''
     step = datetime.timedelta(days=1)
     if isinstance(start_date, str):
-        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(start_date[:10], '%Y-%m-%d')
     if isinstance(end_date, str):
-        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date[:10], '%Y-%m-%d')
     while start_date <= end_date:
         if strings:
             yield start_date.strftime('%Y-%m-%d')
@@ -347,7 +347,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
     pyplot.yticks([], [])
     person_labels.sort()
-    pyplot.ylim(0, person_labels[-1][0] + 1)
+    pyplot.ylim(-1, person_labels[-1][0] + 1)
     x_tick_locs = []
     x_tick_vals = []
     for i, d in enumerate(all_dates):
@@ -360,7 +360,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
-    pyplot.xlim(-1, x_tick_locs[-1] + 1)
+    pyplot.xlim(-1, x_tick_locs[-1] + 20)
     pyplot.grid(b=True, which='both', axis='x')
     vertical_size_per_person = 0.3
     vertical_size = vertical_size_per_person * len(person_labels)
@@ -493,6 +493,9 @@ if __name__ == '__main__':
     # load review info
     reviewers_by_date = load_reviewers(REVIEWS_FILENAME)
 
+    contrib_window = datetime.timedelta(days=14)
+    review_window = datetime.timedelta(days=5)
+
     # combine data sources down to one set of contributors and dates
     people_by_date = defaultdict(lambda: defaultdict(set))
     dates_by_person = defaultdict(lambda: defaultdict(set))
@@ -525,8 +528,6 @@ if __name__ == '__main__':
         people_by_date[date]['reviews'] = reviews
         unique_reviewer_set.update(reviews)
         date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
-        contrib_window = datetime.timedelta(days=14)
-        review_window = datetime.timedelta(days=5)
         for person in contribs:
             end_date = date_obj + contrib_window
             for d in date_range(date, end_date):
