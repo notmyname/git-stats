@@ -68,6 +68,7 @@ def get_max_min_days_ago():
 FIRST_DATE, LAST_DATE = get_max_min_days_ago()
 FILENAME = 'contrib_stats.data'
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'
 
 excluded_authors = (
     'Jenkins <jenkins@review.openstack.org>',
@@ -81,7 +82,9 @@ excluded_authors = (
 )
 
 RELEASE_DATES = (
-    '2010-07-19', # austin, 1.0.0
+    '2010-07-19', # initial, 1.0.0
+    '2010-10-21', # austin, 1.1.0
+    '2011-02-03', # bexar, 1.2.0
     '2011-04-15', # cactus, 1.3.0
     '2011-05-27', # 1.4.0
     '2011-06-14', # 1.4.1
@@ -113,6 +116,7 @@ RELEASE_DATES = (
     '2015-02-02', # 2.2.2
     '2015-04-30', # kilo, 2.3.0
     '2015-09-01', # 2.4.0
+    '2015-10-02', # liberty, 2.5.0
 )
 
 def save_commits(contribs_by_date, authors_by_count, filename):
@@ -180,91 +184,32 @@ def load_reviewers(filename):
                     reviewers_by_date[when].add(name_email)
     return reviewers_by_date
 
-def map_people(unmapped_people):
-    mapped_people = set()
-    the_people_map = {
-        #'Bad Name <bad@email>': 'Good Name <good@email>'
-        'gholt <z-launchpad@brim.net>': 'Greg Holt <gholt@rackspace.com>',
-        'Mike Barton <mike-launchpad@weirdlooking.com>': 'Michael Barton <mike@weirdlooking.com>',
-        'Chmouel Boudjnah <chmouel@enovance.com>': 'Chmouel Boudjnah <chmouel@chmouel.com>',
-        'Maru Newby <mnewby@internap.com>': 'Maru Newby <marun@redhat.com>',
-        'Zhongyue Luo <zhongyue.nah@intel.com>': 'Zhongyue Luo <zhongyue.luo@intel.com>',
-        'James E. Blair <corvus@inaugust.com>': 'James E. Blair <jeblair@openstack.org>',
-        u'Juan J. Mart\xednez <juan@memset.com>': 'Juan J. Martinez <juan@memset.com>',
-        'Adrian Smith <adrian_f_smith@dell.com>': 'Adrian Smith <adrian@17od.com>',
-        'Victor Rodionov <victor.rodionov@nexenta.com>': 'Victor Rodionov <victor.ordaz@gmail.com>',
-        'dpdillinger <dan.dillinger@sonian.net>': 'Dan Dillinger <dan.dillinger@sonian.net>',
-        'Yu.Yang <alex890714@gmail.com>': 'Alex Yang <alex890714@gmail.com>',
-        'Clark Boylan <clark.boylan@gmail.com>': 'Clark Boylan <cboylan@sapwetik.org>',
-        'Riqiang Li <lrqrun@gmail.com>': 'Li Riqiang <lrqrun@gmail.com>',
-        'Andy McCrae <andy.mccrae@googleemail.com>': 'Andy McCrae <andy.mccrae@gmail.com>',
-        'Doug Hellmann <doug.hellmann@dreamhost.com>': 'Doug Hellmann <doug@doughellmann.com>',
-        'mail-zhang-yee <mail.zhang.yee@gmail.com>': 'Yee <mail.zhang.yee@gmail.com>',
-        'Peter Portante <peter.a.portante@gmail.com>': 'Peter Portante <peter.portante@redhat.com>',
-        'Kun Huang <gareth@unitedstack.com>': 'Kun Huang <gareth@openstacker.org>',
-        'Joe Gordon <jogo@cloudscaling.com>': 'Joe Gordon <joe.gordon0@gmail.com>',
-        'Edward Hope-Morley <edward.hope-morley@canonical.com>': 'Edward Hope-Morley <opentastic@gmail.com>',
-        'paul luse <paul.e.luse@intel.com>': 'Paul Luse <paul.e.luse@intel.com>',
-        'Newptone <xingchao@unitedstack.com>': 'Xingchao Yu <xingchao@unitedstack.com>',
-        'anticw <cw@f00f.org>': 'Chris Wedgewood <cw@f00f.org>',
-        'Chris Wedgwood <cw@f00f.org>': 'Chris Wedgewood <cw@f00f.org>',
-        'Aaron Rosen <arosen@nicira.com>': 'Aaron Rosen <aaronorosen@gmail.com>',
-        'Matthew Kassawara <mkassawara@gmail.com>': 'Matt Kassawara <mkassawara@gmail.com>',
-        'Madhuri Kumari <madhuri.rai07@gmail.com>': 'Madhuri Kumari <madhuri.kumari@nectechnologies.in>',
-        'James Page <james.page@canonical.com>': 'James Page <james.page@ubuntu.com>',
-        'Andreas Jaeger <jaegerandi@gmail.com>': 'Andreas Jaeger <aj@suse.de>',
-        'Jay S. Bryant <jsbryant@us.ibm.com>': 'Jay Bryant <jsbryant@us.ibm.com>',
-        'greghaynes <greg@greghaynes.net>': 'Gregory Haynes <greg@greghaynes.net>',
-        'Arnaud <arnaud.jost@ovh.net>': 'Arnaud JOST <arnaud.jost@pvh.net>',
-        'Mitsuhiro SHIGEMATSU <shigematsu.mitsuhiro@lab.ntt.co.jp>': \
-            'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
-        'MITSUHIRO Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>': \
-            'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>',
-        'Tim Burke <tim.burke@gmail.com>': 'Tim Burke <tim@swiftstack.com>',
-        'Michael MATUR <michael.matur@gmail.com>': 'Michael Matur <michael.matur@gmail.com>',
-        'janonymous <jaivish.kothari@nectechnologies.in>': 'Jaivish Kothari <jaivish.kothari@nectechnologies.in>',
-        'oshritf <oshritf@il.ibm.com>': 'Oshrit Feder <oshritf@il.ibm.com>',
-        'litong01 <litong01@us.ibm.com>': 'Tong Li <litong01@us.ibm.com>',
-        'Marcelo Martins <btorch@gmail.com>': 'Marcelo Martins <marcelo.martins@rackspace.com>',
-        'Yuan Zhou <yuan.zhou@intel.com>': 'Yuan Zhou <dunk007@gmail.com>',
-        'Florent Flament <contact@florentflament.com>': 'Florent Flament <florent.flament-ext@cloudwatt.com>',
-        'Alex Holden <a@lexholden.com>': 'Alex Holden <alex@alexjonasholden.com>',
-        'Zhenguo Niu <zhenguo@unitedstack.com>': 'Zhenguo Niu <niuzhenguo@huawei.com>',
-        'Sarvesh Ranjan <sarvranjan@gmail.com>': 'Sarvesh Ranjan <saranjan@cisco.com>',
-        'Zhongyue Luo <zhongyue.luo@gmail.com>': 'Zhongyue Luo <zhongyue.luo@intel.com>',
-        'Cristian A Sanchez <cabsanchez@gmail.com>': 'Cristian A Sanchez <cristian.a.sanchez@intel.com>',
-        'Christian Berendt <berendt@b1-systems.de>': 'Christian Berendt <christian@berendt.io>',
-        'Victor Rodionov <victor.ordaz@gmail.com>': 'Victor Rodionov <vito.ordaz@gmail.com>',
-        'ChangBo Guo(gcb) <glongwave@gmail.com>': 'ChangBo Guo(gcb) <guochbo@cn.ibm.com>',
-        'Zhang Hua <zhuadl@cn.ibm.com>': 'Zhang Hua <joshua.zhang@canonical.com>',
-        'Andy McCrae <andy.mccrae@gmail.com>': 'Andy McCrae <andy.mccrae@googlemail.com>',
-        'Sascha Peilicke <saschpe@gmx.de>': 'Sascha Peilicke <saschpe@mailbox.org>',
-        'Dieter Plaetinck <dieter@vimeo.com>': 'Dieter Plaetinck <dieter@plaetinck.be>',
-        'Sushil Kumar <sushil.kumar2@globallogic.com>': 'Sushil Kumar <skm.net@gmail.com>',
-        'Paul McMillan <paul.mcmillan@nebula.com>': 'Paul McMillan <paul@mcmillan.ws>',
-        'Arnaud JOST <arnaud.jost@ovh.net>': 'Arnaud JOST <arnaud.jost@pvh.net>',
-        'Brent Roskos <broskos@internap.com>': 'Brent Roskos <broskos@redhat.com>',
-        'Ilya Kharin <ikharin@mirantis.com>': 'Ilya Kharin <akscram@gmail.com>',
-        'David Moreau Simard <dmsimard@iweb.com>': 'David Moreau Simard <moi@dmsimard.com>',
-        'Jamie Lennox <jamielennox@redhat.com>': 'Jamie Lennox <jlennox@redhat.com>',
-        'Felipe Reyes <freyes@tty.cl>': 'Felipe Reyes <felipe.reyes@canonical.com>',
-        'Conrad Weidenkeller <conrad@weidenkeller.com>': 'Conrad Weidenkeller <conrad.weidenkeller@rackspace.com>',
-        'MORITA Kazutaka <morita.kazutaka@gmail.com>': 'Morita Kazutaka <morita.kazutaka@gmail.com>',
-        'Mitsuhiro Shigematsu <shigematsu.mitsuhiro@lab.ntt.co.jp>': 'SHIGEMATSU Mitsuhiro <shigematsu.mitsuhiro@lab.ntt.co.jp>',
-        'Jola Mirecka <jola.mirecka@hp.com>': 'jola-mirecka <jola.mirecka@hp.com>',
-        'Kazuhiro Miyahara <miyahara.kazuhiro@lab.ntt.co.jp>': 'Kazuhiro MIYAHARA <miyahara.kazuhiro@lab.ntt.co.jp>',
-        'Zhang Hua <zhuadl@cn.ibm.com>': 'Hua Zhang <zhuadl@cn.ibm.com>',
-        'guang-yee <guang.yee@hp.com>': 'Guang Yee <guang.yee@hp.com>',
-        'dk647 <meizu647@gmail.com>': 'Liu Siqi <meizu647@gmail.com>',
-        u'Fran\xc3ois Charlier <francois.charlier@redhat.com>': u'Francois Charlier <francois.charlier@enovance.com>',
-        u'Ionu\xc8 Ar\xc8\xc4ri\xc8i <iartarisi@suse.cz>': u'Ionut Artarisi <iartarisi@suse.cz>',
-        u'Gon\xc3ri Le Bouder <goneri.lebouder@enovance.com>': u'Goneri Le Bouder <goneri@redhat.com>',
+the_people_map = {}
 
-    }
+def load_the_people_map():
+    raw_map = json.load(open(PEOPLE_MAP_FILENAME))
+    users = raw_map['users']
+    for record in users:
+        name = record['user_name']
+        for e in record['emails']:
+            the_people_map[e] = name
+
+load_the_people_map()
+
+def map_people(unmapped_people):
+    '''
+    maps people by email to a name
+
+    Lazy about non-ascii, lazy about name conflicts
+    '''
+    mapped_people = set()
     for person in unmapped_people:
-        if person in the_people_map:
-            person = the_people_map[person]
-        mapped_people.add(person)
+        person = person.encode('ascii', 'replace')
+        name, email = person.split('<', 1)
+        email = email[:-1].strip()
+        name = name.strip()
+        good_name = the_people_map.get(email, name)
+        mapped_people.add(good_name.encode('ascii', 'replace'))
     return mapped_people
 
 def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
