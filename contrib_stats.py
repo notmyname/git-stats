@@ -5,6 +5,7 @@ from collections import defaultdict
 import json
 import re
 from matplotlib import pyplot
+import unicodedata
 
 
 class WindowQueue(object):
@@ -204,12 +205,13 @@ def map_people(unmapped_people):
     '''
     mapped_people = set()
     for person in unmapped_people:
-        person = person.encode('ascii', 'replace')
+        person = unicodedata.normalize('NFKD', person).encode('ascii','ignore')
         name, email = person.split('<', 1)
         email = email[:-1].strip()
         name = name.strip()
         good_name = the_people_map.get(email, name)
-        mapped_people.add(good_name.encode('ascii', 'replace'))
+        good_name = unicodedata.normalize('NFKD', unicode(good_name)).encode('ascii','ignore').title()
+        mapped_people.add(good_name)
     return mapped_people
 
 def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
