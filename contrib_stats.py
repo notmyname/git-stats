@@ -275,20 +275,20 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         rcolor = percent_active * 0xff
         bcolor = 0
         gcolor = 0
-        activity_color = '#%.2x%.2x%.2x' % (rcolor, gcolor, bcolor)
+        activity_color = '#%02x%02x%02x' % (rcolor, gcolor, bcolor)
+        review_color = '#%02x%02x%02x' % (106, 171, 62)
+        commit_color = '#%02x%02x%02x' % (37, 117, 195)
 
-        # idea: make cumulative data as the fron at colored based on activity
-        # remove coloring commits based on activity
-        pyplot.plot(x_vals, commit_data, linestyle='-',
-                    label=person, linewidth=10, solid_capstyle="butt",
-                    alpha=1.0, color='#0000ff')
         pyplot.plot(x_vals, cumulative_data, linestyle='-',
                     label=person, linewidth=3, solid_capstyle="butt",
-                    alpha=1.0, color='#999999')
+                    alpha=1.0, color=activity_color)
+        pyplot.plot(x_vals, commit_data, linestyle='-',
+                    label=person, linewidth=10, solid_capstyle="butt",
+                    alpha=1.0, color=commit_color)
         pyplot.plot(x_vals, review_data, linestyle='-',
                     label=person, linewidth=5, solid_capstyle="butt",
-                    alpha=1.0, color='#339933')  # color='#469bcf')
-        label_xval = cumulative_data.index(yval) - 3
+                    alpha=1.0, color=review_color)
+        label_xval = cumulative_data.index(yval) - 3  # move over some for room
         pyplot.annotate(name, xy=(label_xval, yval - 0.25), horizontalalignment='right', color=activity_color)
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
     pyplot.yticks([], [])
