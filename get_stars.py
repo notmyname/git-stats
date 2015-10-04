@@ -13,6 +13,9 @@ cmd = (
 '--format JSON starredby:"%s" status:open\''
 )
 
+REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+DATA_FILENAME = 'all_stars.data'
+
 core_emails = (
     "me@not.mn",
     "sam@swiftstack.com",
@@ -31,29 +34,60 @@ core_emails = (
     "joel.wright@sohonet.com",
 )
 
-all_stars = []
-subject_len_limit = 50
-for email in core_emails:
-    args = shlex.split(cmd % email)
-    p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    raw, _ = p.communicate()
-    starred = []
-    for line in raw.split('\n'):
-        try:
-            patch = json.loads(line)
-        except ValueError:
-            # last line
-            break
-        try:
-            subject = patch['subject']
-            if len(subject) > subject_len_limit:
-                subject = subject[:(subject_len_limit - 3)] + '...'
-            owner = patch['owner']['name']
-            starred.append((patch['number'], subject, owner.title(), patch['status']))
-        except KeyError:
-            # last line
-            pass
-    all_stars.extend(starred)
+def load_reviewers(filename):
+    reviewers = set()
+    with open(filename, 'rb') as f:
+        for line in f:
+            if line:
+                review_data = json.loads(line)
+            else:
+                continue
+            if 'comments' not in review_data:
+                continue
+            for review_comment in review_data['comments']:
+                reviewer = review_comment['reviewer']
+                if 'email' not in reviewer:
+                    continue
+                reviewers.add(reviewer['email'])
+    return reviewers
+
+contrib_emails = load_reviewers(REVIEWS_FILENAME)
+
+def get_stars():
+    all_stars = []
+    subject_len_limit = 50
+    print 'Total emails to get info for: %d' % len(contrib_emails)
+    for i, email in enumerate(contrib_emails):
+        print i, email
+        args = shlex.split(cmd % email)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE)
+        raw, _ = p.communicate()
+        starred = []
+        for line in raw.split('\n'):
+            try:
+                patch = json.loads(line)
+            except ValueError:
+                # last line
+                break
+            try:
+                if 'swift' not in patch['project']:
+                    continue
+                subject = patch['subject']
+                if len(subject) > subject_len_limit:
+                    subject = subject[:(subject_len_limit - 3)] + '...'
+                owner = patch['owner']['name']
+                starred.append((patch['number'], subject, owner.title(), patch['status']))
+            except KeyError:
+                # last line
+                pass
+        all_stars.extend(starred)
+    return all_stars
+
+try:
+    all_stars = [tuple(x) for x in json.load(open(DATA_FILENAME))]
+except IOError:
+    all_stars = get_stars()
+    json.dump(all_stars, open(DATA_FILENAME, 'wb'))
 
 # so now that we have the starred patches, count them
 ctr = Counter(all_stars)
@@ -62,5 +96,5 @@ template = '%s (%s) - %s - (count: %s)'
 for patch, count in ordered:
     if count <= 1:
         continue
-    number, subject, owner, status = patch
+    number, subject, owner = patch
     print template % (subject, owner, number, count)

@@ -1,6 +1,8 @@
 *vcs_authors
 *contrib_stats.data
+all_stars.data
 *.png
 *~
 *.swp
 swift*.patches
+*.scratch
