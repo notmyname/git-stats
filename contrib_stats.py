@@ -117,7 +117,7 @@ RELEASE_DATES = (
     '2015-02-02', # 2.2.2
     '2015-04-30', # kilo, 2.3.0
     '2015-09-01', # 2.4.0
-    '2015-10-02', # liberty, 2.5.0
+    '2015-10-05', # liberty, 2.5.0
 )
 
 def save_commits(contribs_by_date, authors_by_count, filename):
