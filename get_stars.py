@@ -56,9 +56,10 @@ contrib_emails = load_reviewers(REVIEWS_FILENAME)
 def get_stars():
     all_stars = []
     subject_len_limit = 50
-    print 'Total emails to get info for: %d' % len(contrib_emails)
+    len_contrib_emails = len(contrib_emails)
+    print 'Total emails to get info for: %d' % len_contrib_emails
     for i, email in enumerate(contrib_emails):
-        print i, email
+        print '%d/%d %s' % (i + 1, len_contrib_emails, email)
         args = shlex.split(cmd % email)
         p = subprocess.Popen(args, stdout=subprocess.PIPE)
         raw, _ = p.communicate()
@@ -76,7 +77,9 @@ def get_stars():
                 if len(subject) > subject_len_limit:
                     subject = subject[:(subject_len_limit - 3)] + '...'
                 owner = patch['owner']['name']
-                starred.append((patch['number'], subject, owner.title(), patch['status']))
+                weight = 2 if email in core_emails else 1
+                for _ in range(weight):
+                    starred.append((patch['number'], subject, owner.title(), patch['status']))
             except KeyError:
                 # last line
                 pass
@@ -94,7 +97,7 @@ ctr = Counter(all_stars)
 ordered = ctr.most_common()
 template = '%s (%s) - %s - (count: %s)'
 for patch, count in ordered:
-    if count <= 1:
+    if count <= 2:
         continue
-    number, subject, owner = patch
+    number, subject, owner, status = patch
     print template % (subject, owner, number, count)
