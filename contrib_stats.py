@@ -70,6 +70,7 @@ FIRST_DATE, LAST_DATE = get_max_min_days_ago()
 FILENAME = 'contrib_stats.data'
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'
+PERCENT_ACTIVE_FILENAME = 'percent_active.data'
 
 excluded_authors = (
     'Jenkins <jenkins@review.openstack.org>',
@@ -259,6 +260,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         graphable_data[person] = (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data)
 
     person_labels = []
+    person_active = []
     for person, (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data) in graphable_data.iteritems():
         name = person.split('<', 1)[0].strip()
         person_labels.append((yval, name))
@@ -274,6 +276,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         days_since_first = max(days_since_first_review, days_since_first_commit)
         # since your first commit, how much of the life of the project have you been active?
         percent_active = how_many_days_active / float(days_since_first)
+        person_active.append((person, percent_active))
         rcolor = percent_active * 0xff
         bcolor = 0
         gcolor = 0
@@ -320,6 +323,11 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
     fig.set_size_inches(horizontal_size, vertical_size)
     fig.savefig('contrib_activity.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
+
+    # maybe a bad place, but we have the percent active per person, so write it out
+    with open(PERCENT_ACTIVE_FILENAME, 'wb') as f:
+        for pers, perc in person_active:
+            f.write('%s:%s\n' % (pers, perc))
 
 def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_date, end_date):
     all_dates = list(date_range(start_date, end_date))

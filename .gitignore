@@ -6,3 +6,4 @@ all_stars.data
 *.swp
 swift*.patches
 *.scratch
+percent_active.data

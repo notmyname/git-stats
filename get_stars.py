@@ -15,6 +15,7 @@ cmd = (
 
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 DATA_FILENAME = 'all_stars.data'
+PERCENT_ACTIVE_FILENAME = 'percent_active.data'
 
 core_emails = (
     "me@not.mn",
@@ -53,6 +54,19 @@ def load_reviewers(filename):
 
 contrib_emails = load_reviewers(REVIEWS_FILENAME)
 
+def load_weights(filename):
+    weights = {}
+    with(open(filename, 'rb')) as f:
+        for line in f:
+            if line:
+                person, percent = line.split(':')
+                person = person.strip()
+                percent = float(percent)
+                weights[person.lower()] = percent
+    return weights
+
+weights = load_weights(PERCENT_ACTIVE_FILENAME)
+
 def get_stars():
     all_stars = []
     subject_len_limit = 50
@@ -77,7 +91,7 @@ def get_stars():
                 if len(subject) > subject_len_limit:
                     subject = subject[:(subject_len_limit - 3)] + '...'
                 owner = patch['owner']['name']
-                weight = 2 if email in core_emails else 1
+                weight = int(weights.get(owner.lower(), 1.0) * 100)
                 for _ in range(weight):
                     starred.append((patch['number'], subject, owner.title(), patch['status']))
             except KeyError:
@@ -96,8 +110,8 @@ except IOError:
 ctr = Counter(all_stars)
 ordered = ctr.most_common()
 template = '%s (%s) - %s - (count: %s)'
-for patch, count in ordered:
-    if count <= 2:
-        continue
+for i, (patch, count) in enumerate(ordered):
+    if i > 20:
+        break
     number, subject, owner, status = patch
     print template % (subject, owner, number, count)

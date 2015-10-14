@@ -13,4 +13,5 @@ mv ${SWIFTDIR}/total_contribs.png ${ORIGPWD}/total_contribs.png
 mv ${SWIFTDIR}/contrib_activity.png ${ORIGPWD}/contrib_activity.png
 mv ${SWIFTDIR}/contrib_stats.data ${ORIGPWD}/contrib_stats.data
 mv ${SWIFTDIR}/swift_gerrit_history.patches ${ORIGPWD}/swift_gerrit_history.patches
+mv ${SWIFTDIR}/percent_active.data ${ORIGPWD}/percent_active.data
 cd ${ORIGPWD}
