@@ -276,7 +276,8 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
         days_since_first = max(days_since_first_review, days_since_first_commit)
         # since your first commit, how much of the life of the project have you been active?
         percent_active = how_many_days_active / float(days_since_first)
-        person_active.append((person, percent_active))
+        cumulative_percent_active = how_many_days_active / float(len(all_dates))
+        person_active.append((person, cumulative_percent_active))
         rcolor = percent_active * 0xff
         bcolor = 0
         gcolor = 0
