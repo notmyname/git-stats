@@ -393,7 +393,6 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     pyplot.plot(x_vals, authors_yvals, '-', color='blue',
                label="Total authors", drawstyle="steps", linewidth=3)
     pyplot.title('Total contributors (as of %s)' % datetime.datetime.now().date())
-    pyplot.xlabel('Days Ago')
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
     x_tick_locs = []
