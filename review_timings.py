@@ -4,9 +4,11 @@
 
 import json
 import datetime
+import sys
 
-# REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 REVIEWS_FILENAME = 'swift-open-comments.patches'
+if '--all-patches' in sys.argv:
+    REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 
 bots = (
     'jenkins@review.openstack.org',
@@ -73,7 +75,8 @@ def load_data(filename):
                 reviewer_avg = float(sum(reviewer_deltas)) / len(reviewer_deltas)
             else:
                 reviewer_avg = 0
-            patch_data[patch_number] = (owner_avg, reviewer_avg)
+            if any((owner_avg, reviewer_avg)):
+                patch_data[patch_number] = (owner_avg, reviewer_avg)
     return patch_data
 
 timing_data = load_data(REVIEWS_FILENAME)
