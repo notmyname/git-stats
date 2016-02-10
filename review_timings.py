@@ -81,16 +81,60 @@ def load_data(filename):
 
 timing_data = load_data(REVIEWS_FILENAME)
 
-global_owner_avg = 0
-global_reviewer_avg = 0
-for patch_num, (owner_avg, reviewer_avg) in timing_data.iteritems():
-    global_owner_avg += owner_avg
-    global_reviewer_avg += reviewer_avg
-    oa = datetime.timedelta(seconds=owner_avg)
-    ra = datetime.timedelta(seconds=reviewer_avg)
-    print 'Patch %d\n owner: %s\n reviewer: %s' % (patch_num, oa, ra)
-global_owner_avg /= len(timing_data)
-global_reviewer_avg /= len(timing_data)
-oa = datetime.timedelta(seconds=global_owner_avg)
-ra = datetime.timedelta(seconds=global_reviewer_avg)
-print 'Global average:\n owner: %s\n reviewer: %s' % (oa, ra)
+
+#######################################################################
+
+import math
+import collections
+
+def mean(data):
+    return float(sum(data)) / float(len(data))
+
+def median(data):
+    count = len(data)
+    if count % 2:
+        return data[count / 2]
+    else:
+        middle = count // 2
+        return sum(data[middle-1:middle+1]) / 2.0
+
+def mode(data):
+    d = collections.defaultdict(int)
+    for item in data:
+        d[item] += 1
+    return max((count,key) for key,count in d.items())[1]
+
+def std_deviation(data):
+    avg = mean(data)
+    avg_squared_deviation = mean([(avg-x)**2 for x in data])
+    return math.sqrt(avg_squared_deviation)
+
+def min_max_difference(data):
+    data = data[:]
+    data.sort()
+    return data[-1] - data[0]
+
+def stats(data):
+    return (mean(data),
+            median(data),
+            mode(data),
+            std_deviation(data),
+            min_max_difference(data),
+           )
+
+#######################################################################
+
+owner_data = [x[0] for x in timing_data.itervalues()]
+reviewer_data = [x[1] for x in timing_data.itervalues()]
+
+print 'Patch owner review stats:'
+print ' mean: %s' % str(datetime.timedelta(seconds=mean(owner_data)))
+print ' median: %s' % str(datetime.timedelta(seconds=median(owner_data)))
+print ' std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(owner_data)))
+print ' max_difference: %s' % str(datetime.timedelta(seconds=min_max_difference(owner_data)))
+print
+print 'Patch reviewer stats:'
+print ' mean: %s' % str(datetime.timedelta(seconds=mean(reviewer_data)))
+print ' median: %s' % str(datetime.timedelta(seconds=median(reviewer_data)))
+print ' std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(reviewer_data)))
+print ' max_difference: %s' % str(datetime.timedelta(seconds=min_max_difference(reviewer_data)))
