@@ -6,9 +6,12 @@ import json
 import datetime
 import sys
 
-REVIEWS_FILENAME = 'swift-open-comments.patches'
+project = 'swift'
+if '--nova' in sys.argv:
+    project = 'nova'
+REVIEWS_FILENAME = '%s-open-comments.patches' % project
 if '--all-patches' in sys.argv:
-    REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+    REVIEWS_FILENAME = '%s_gerrit_history.patches' % project
 
 bots = (
     'jenkins@review.openstack.org',
@@ -43,6 +46,8 @@ def load_data(filename):
                 try:
                     reviewer = review_comment['reviewer']['email']
                 except KeyError:
+                    continue
+                if review_comment['reviewer']['name'].endswith(' CI'):
                     continue
                 message = review_comment['message']
                 timestamp = review_comment['timestamp']
