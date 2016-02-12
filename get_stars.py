@@ -6,7 +6,7 @@ import subprocess
 import shlex
 import json
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 
 cmd = (
 '/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '
@@ -16,24 +16,6 @@ cmd = (
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 DATA_FILENAME = 'all_stars.data'
 PERCENT_ACTIVE_FILENAME = 'percent_active.data'
-
-core_emails = (
-    "me@not.mn",
-    "sam@swiftstack.com",
-    "cschwede@redhat.com",
-    "clay.gerrard@gmail.com",
-    "alistair.coles@hp.com",
-    "darrell@swiftstack.com",
-    "david.goetz@rackspace.com",
-    "greglange@gmail.com",
-    "matt@oliver.net.au",
-    "mike@weirdlooking.com",
-    "zaitcev@kotori.zaitcev.us",
-    "paul.e.luse@intel.com",
-    "tsuyuzaki.kota@lab.ntt.co.jp",
-    "thiago@redhat.com",
-    "joel.wright@sohonet.com",
-)
 
 def load_reviewers(filename):
     reviewers = set()
@@ -49,7 +31,7 @@ def load_reviewers(filename):
                 reviewer = review_comment['reviewer']
                 if 'email' not in reviewer:
                     continue
-                reviewers.add(reviewer['email'])
+                reviewers.add((reviewer['email'], reviewer['name'].lower()))
     return reviewers
 
 contrib_emails = load_reviewers(REVIEWS_FILENAME)
@@ -67,12 +49,12 @@ def load_weights(filename):
 
 weights = load_weights(PERCENT_ACTIVE_FILENAME)
 
-def get_stars():
-    all_stars = []
+def load_starred_patches():
+    all_stars = defaultdict(list)
     subject_len_limit = 50
     len_contrib_emails = len(contrib_emails)
     print 'Total emails to get info for: %d' % len_contrib_emails
-    for i, email in enumerate(contrib_emails):
+    for i, (email, starer_name) in enumerate(contrib_emails):
         print '%d/%d %s' % (i + 1, len_contrib_emails, email)
         args = shlex.split(cmd % email)
         p = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -85,26 +67,37 @@ def get_stars():
                 # last line
                 break
             try:
-                if 'swift' not in patch['project']:
+                if 'openstack/swift' not in patch['project']:
                     continue
                 subject = patch['subject']
                 if len(subject) > subject_len_limit:
                     subject = subject[:(subject_len_limit - 3)] + '...'
                 owner = patch['owner']['name']
-                weight = int(weights.get(owner.lower(), 1.0) * 100)
-                for _ in range(weight):
-                    starred.append((patch['number'], subject, owner.title(), patch['status']))
+                starred.append((patch['number'], subject, owner.title(), patch['status']))
             except KeyError:
                 # last line
                 pass
+        all_stars[starer_name].extend(starred)
+    return all_stars
+
+def weight_stars(stars_by_starer):
+    all_stars = []
+    for starer_name, star_list in stars_by_starer.iteritems():
+        weight = int(weights.get(starer_name, 0.0) * 100)
+        starred = []
+        for number, subject, owner, status in star_list:
+            for _ in range(weight):
+                starred.append((number, subject, owner.title(), status))
         all_stars.extend(starred)
     return all_stars
 
 try:
-    all_stars = [tuple(x) for x in json.load(open(DATA_FILENAME))]
+    stars_by_starer = json.load(open(DATA_FILENAME))
 except IOError:
-    all_stars = get_stars()
-    json.dump(all_stars, open(DATA_FILENAME, 'wb'))
+    stars_by_starer = load_starred_patches()
+    json.dump(stars_by_starer, open(DATA_FILENAME, 'wb'))
+
+all_stars = weight_stars(stars_by_starer)
 
 # so now that we have the starred patches, count them
 ctr = Counter(all_stars)
