@@ -83,6 +83,7 @@ def load_data(filename):
                 # no reviews ever!
                 reviewer_avg = 0
                 unreviewed_patches += 1
+                # print patch_number
             if any((owner_avg, reviewer_avg)):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)
     return patch_data, unreviewed_patches

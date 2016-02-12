@@ -83,7 +83,7 @@ def load_starred_patches():
 def weight_stars(stars_by_starer):
     all_stars = []
     for starer_name, star_list in stars_by_starer.iteritems():
-        weight = int(weights.get(starer_name, 0.0) * 100)
+        weight = max(int(weights.get(starer_name, 0.0) * 100), 1)
         starred = []
         for number, subject, owner, status in star_list:
             for _ in range(weight):
