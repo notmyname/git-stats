@@ -262,10 +262,12 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
 
     person_labels = []
     person_active = []
+    limited_all_dates_look_back = 365 * 2  # weighting looks bax 2 years
     for person, (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data) in graphable_data.iteritems():
         name = person.split('<', 1)[0].strip()
         person_labels.append((yval, name))
-        how_many_days_active = sparse_cumulative_data.count(yval)
+        how_many_days_active_total = sparse_cumulative_data.count(yval)
+        how_many_days_active_limited = sparse_cumulative_data[-limited_all_dates_look_back:].count(yval)
         try:
             days_since_first_commit = len(x_vals) - commit_data.index(yval)
         except ValueError:
@@ -276,8 +278,8 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
             days_since_first_review = 0
         days_since_first = max(days_since_first_review, days_since_first_commit)
         # since your first commit, how much of the life of the project have you been active?
-        percent_active = how_many_days_active / float(days_since_first)
-        cumulative_percent_active = how_many_days_active / float(len(all_dates))
+        percent_active = how_many_days_active_total / float(days_since_first)
+        cumulative_percent_active = how_many_days_active_limited / float(limited_all_dates_look_back)
         weight = percent_active * cumulative_percent_active
         person_active.append((name, weight))
         rcolor = percent_active * 0xff
