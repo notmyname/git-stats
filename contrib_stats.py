@@ -299,7 +299,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
                     label=person, linewidth=5, solid_capstyle="butt",
                     alpha=1.0, color=review_color)
         label_xval = cumulative_data.index(yval) - 3  # move over some for room
-        pyplot.annotate('%s (%s)' % (name, max(int(weight*100), 1)), xy=(label_xval, yval - 0.25), horizontalalignment='right', color=activity_color)
+        pyplot.annotate(name, xy=(label_xval, yval - 0.25), horizontalalignment='right', color=activity_color)
     pyplot.title('Contributor Actvity (as of %s)' % datetime.datetime.now().date())
     pyplot.yticks([], [])
     person_labels.sort()
