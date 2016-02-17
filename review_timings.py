@@ -26,7 +26,7 @@ bots = (
 
 def load_data(filename):
     patch_data = {}
-    unreviewed_patches = 0
+    unreviewed_patches = []
     with open(filename, 'rb') as f:
         for line in f:
             if line:
@@ -82,13 +82,13 @@ def load_data(filename):
             else:
                 # no reviews ever!
                 reviewer_avg = 0
-                unreviewed_patches += 1
+                unreviewed_patches.append(patch_number)
                 # print patch_number
             if any((owner_avg, reviewer_avg)):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)
     return patch_data, unreviewed_patches
 
-timing_data, unreviewed_count = load_data(REVIEWS_FILENAME)
+timing_data, unreviewed = load_data(REVIEWS_FILENAME)
 
 
 #######################################################################
@@ -147,4 +147,7 @@ print ' mean: %s' % str(datetime.timedelta(seconds=mean(reviewer_data)))
 print ' median: %s' % str(datetime.timedelta(seconds=median(reviewer_data)))
 print ' std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(reviewer_data)))
 print ' max_difference: %s' % str(datetime.timedelta(seconds=min_max_difference(reviewer_data)))
-print ' %d unreviewed patches' % unreviewed_count
+print ' %d unreviewed patches' % len(unreviewed)
+if '--show-unreviewed' in sys.argv:
+    for patch_number in unreviewed:
+        print 'https://review.openstack.org/#/c/%d/' % patch_number
