@@ -1,5 +1,8 @@
 #/bin/bash
 
+ORIGPWD=`pwd`
+cd /Users/john/Documents/git-stats
+
 PAGE_SIZE=500
 
 # grab comments
@@ -53,3 +56,5 @@ while [[ $MORE == "true" ]]; do
     MORE=`tail -20 $PATCHES | sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep moreChanges | cut -d: -f2 | cut -d: -f2 | sed 's/"//g' | tail -1`
     I=$((I+1))
 done
+
+cd ${ORIGPWD}

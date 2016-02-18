@@ -55,7 +55,7 @@ for i, (patch, count) in enumerate(community_starred_patches):
 template_vars['community_stars'] = '\n'.join(out)
 
 out = []
-for num, subject, owner, status in unreviewed_patchnums:
+for num, subject, owner, status in reversed(unreviewed_patchnums):
     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8')))
 template_vars['unreviewed_list'] = '\n'.join(out)
 

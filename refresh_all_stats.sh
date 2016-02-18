@@ -17,4 +17,7 @@ rm -f all_stars.data
 # rebuild "most starred" list
 ./get_stars.sh
 
+# rebuild the dashboard
+./create_and_deploy_dash.sh
+
 cd ${ORIGPWD}
