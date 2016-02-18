@@ -19,7 +19,7 @@ bots = (
     'review@openstack.org',
 )
 
-def load_data(filename):
+def load_data(filename, subject_len_limit=50):
     patch_data = {}
     unreviewed_patches = []
     with open(filename, 'rb') as f:
@@ -77,7 +77,12 @@ def load_data(filename):
             else:
                 # no reviews ever!
                 reviewer_avg = 0
-                unreviewed_patches.append(patch_number)
+                subject = review_data['subject']
+                owner = review_data['owner']['name']
+                subject = review_data['subject']
+                if len(subject) > subject_len_limit:
+                    subject = subject[:(subject_len_limit - 3)] + '...'
+                unreviewed_patches.append((patch_number, subject, owner, review_data['status']))
                 # print patch_number
             if any((owner_avg, reviewer_avg)):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)

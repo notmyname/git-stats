@@ -6,7 +6,7 @@ body {
     font-size: 12pt;
 }
 
-body #review_stats, body #community_stars {
+body .section {
     /*float: left;*/
     -webkit-border-radius: 10px;
     background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#333), to(#111));
@@ -28,24 +28,24 @@ body div>div {
     text-align: center;
 }
 
-#community_stars a {
+.section ol a {
     color: #6cf;
     text-decoration: none;
 }
 
-#community_stars a:visited {
+.section ol a:visited {
     color: #f66;
 }
 
-#community_stars a:active {
+.section ol a:active {
     color: #6f6;
 }
 
-#community_stars a .subject {
+.section ol a .subject {
     text-decoration: underline;
 }
 
-#community_stars a .owner {
+.section ol a .owner {
     color: #ccc;
     font-size: 10pt;
 }
@@ -72,8 +72,9 @@ h2, h3 {
         width: 100%;
         margin: 0;
         padding: 0;
+        font-size: 10pt;
     }
-    body #review_stats, body #community_stars {
+    body .section {
         display: block;
         width: 90%;
         margin: 0 auto 10px;

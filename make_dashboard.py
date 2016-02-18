@@ -18,8 +18,9 @@ template_vars = {
     'reviewer_response': '',    # patch reviewer response time
     'winner': '',             # who's winning? patch owners or reviewers?
     'unreviewed_patches': '',  # number of unreviewed patches
-    'community_stars': '',     # html snippet for unreviewed patches info
+    'community_stars': '',     # html snippet for community starred patches
     'current_time': '',        # timestamp when this dashboard was created
+    'unreviewed_list': '',     # html snippet for unreviewed patches
 }
 
 template_vars['current_time'] = datetime.strftime(datetime.now(),
@@ -52,6 +53,11 @@ for i, (patch, count) in enumerate(community_starred_patches):
     number, subject, owner, status = patch
     out.append(patch_tmpl.format(number=number, subject=subject, owner=owner))
 template_vars['community_stars'] = '\n'.join(out)
+
+out = []
+for num, subject, owner, status in unreviewed_patchnums:
+    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8')))
+template_vars['unreviewed_list'] = '\n'.join(out)
 
 tmpl = open(TEMPLATE, 'rb').read()
 with open(OUTPUT_FILENAME, 'wb') as f:

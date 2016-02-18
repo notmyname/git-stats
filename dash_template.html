@@ -5,11 +5,12 @@
 <link href="styles.css" rel="stylesheet" type="text/css" />
 <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
 <meta name="format-detection" content="telephone=no" />
+<meta http-equiv="Content-Type" content="application/xhtml; charset=utf-8" />
 </head>
 <body>
 <h1>Swift Community</h1>
 
-<div id="review_stats">
+<div class="section" id="review_stats">
     <h2>Review Stats</h2>
     <div id="open_patches"><span>Open Patches</span><span>{open_patches}</span></div>
     <div id="owner_response"><span>Owner response time</span><span>{owner_response}</span></div>
@@ -17,13 +18,17 @@
     <div id="winning"><span>{winner} are winning!</span></div>
     <div id="unreviewed_patches"><span>Unreviewed patches</span><span>{unreviewed_patches}</span></div>
 </div>
-<div id="community_stars">
+<div class="section" id="community_stars">
     <h3>Community Starred Patches</h3>
     <ol>
         {community_stars}
     </ol>
 </div>
-<div id="last_backups">
+<div class="section" id="unreviewed_list">
+    <h3>Unreviewed Patches</h3>
+    <ol>
+        {unreviewed_list}
+    </ol>
 </div>
 <div id="current_time">
     Stats at <span>{current_time}</span>
