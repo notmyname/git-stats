@@ -20,4 +20,6 @@ rm -f all_stars.data
 # rebuild the dashboard
 ./create_and_deploy_dash.sh
 
+echo 'recreated all stats'
+
 cd ${ORIGPWD}

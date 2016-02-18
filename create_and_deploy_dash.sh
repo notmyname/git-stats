@@ -14,4 +14,6 @@ cd /Users/john/Documents/git-stats
 # upload the dashboard
 deploy_swift_dash
 
+echo 'dashboard recreated and deployed'
+
 cd ${ORIGPWD}
