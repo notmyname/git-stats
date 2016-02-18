@@ -8,3 +8,5 @@ swift*.patches
 nova*.patches
 *.scratch
 percent_active.data
+swift_community_dashboard.html
+*.pyc

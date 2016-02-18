@@ -6,12 +6,7 @@ import json
 import datetime
 import sys
 
-project = 'swift'
-if '--nova' in sys.argv:
-    project = 'nova'
-REVIEWS_FILENAME = '%s-open-comments.patches' % project
-if '--all-patches' in sys.argv:
-    REVIEWS_FILENAME = '%s_gerrit_history.patches' % project
+import stats
 
 bots = (
     'jenkins@review.openstack.org',
@@ -88,66 +83,32 @@ def load_data(filename):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)
     return patch_data, unreviewed_patches
 
-timing_data, unreviewed = load_data(REVIEWS_FILENAME)
+if __name__ == '__main__':
+    project = 'swift'
+    if '--nova' in sys.argv:
+        project = 'nova'
+    REVIEWS_FILENAME = '%s-open-comments.patches' % project
+    if '--all-patches' in sys.argv:
+        REVIEWS_FILENAME = '%s_gerrit_history.patches' % project
 
+    timing_data, unreviewed = load_data(REVIEWS_FILENAME)
 
-#######################################################################
+    owner_data = [x[0] for x in timing_data.itervalues()]
+    reviewer_data = [x[1] for x in timing_data.itervalues()]
 
-import math
-import collections
-
-def mean(data):
-    return float(sum(data)) / float(len(data))
-
-def median(data):
-    count = len(data)
-    if count % 2:
-        return data[count / 2]
-    else:
-        middle = count // 2
-        return sum(data[middle-1:middle+1]) / 2.0
-
-def mode(data):
-    d = collections.defaultdict(int)
-    for item in data:
-        d[item] += 1
-    return max((count,key) for key,count in d.items())[1]
-
-def std_deviation(data):
-    avg = mean(data)
-    avg_squared_deviation = mean([(avg-x)**2 for x in data])
-    return math.sqrt(avg_squared_deviation)
-
-def min_max_difference(data):
-    data = data[:]
-    data.sort()
-    return data[-1] - data[0]
-
-def stats(data):
-    return (mean(data),
-            median(data),
-            mode(data),
-            std_deviation(data),
-            min_max_difference(data),
-           )
-
-#######################################################################
-
-owner_data = [x[0] for x in timing_data.itervalues()]
-reviewer_data = [x[1] for x in timing_data.itervalues()]
-
-print 'Patch owner review stats:'
-print ' mean: %s' % str(datetime.timedelta(seconds=mean(owner_data)))
-print ' median: %s' % str(datetime.timedelta(seconds=median(owner_data)))
-print ' std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(owner_data)))
-print ' max_difference: %s' % str(datetime.timedelta(seconds=min_max_difference(owner_data)))
-print
-print 'Patch reviewer stats:'
-print ' mean: %s' % str(datetime.timedelta(seconds=mean(reviewer_data)))
-print ' median: %s' % str(datetime.timedelta(seconds=median(reviewer_data)))
-print ' std_deviation: %s' % str(datetime.timedelta(seconds=std_deviation(reviewer_data)))
-print ' max_difference: %s' % str(datetime.timedelta(seconds=min_max_difference(reviewer_data)))
-print ' %d unreviewed patches' % len(unreviewed)
-if '--show-unreviewed' in sys.argv:
-    for patch_number in unreviewed:
-        print 'https://review.openstack.org/#/c/%d/' % patch_number
+    print 'Stats for %d patches' % len(timing_data.keys())
+    print 'Patch owner review stats:'
+    print ' mean: %s' % str(datetime.timedelta(seconds=stats.mean(owner_data)))
+    print ' median: %s' % str(datetime.timedelta(seconds=stats.median(owner_data)))
+    print ' std_deviation: %s' % str(datetime.timedelta(seconds=stats.std_deviation(owner_data)))
+    print ' max_difference: %s' % str(datetime.timedelta(seconds=stats.min_max_difference(owner_data)))
+    print
+    print 'Patch reviewer stats:'
+    print ' mean: %s' % str(datetime.timedelta(seconds=stats.mean(reviewer_data)))
+    print ' median: %s' % str(datetime.timedelta(seconds=stats.median(reviewer_data)))
+    print ' std_deviation: %s' % str(datetime.timedelta(seconds=stats.std_deviation(reviewer_data)))
+    print ' max_difference: %s' % str(datetime.timedelta(seconds=stats.min_max_difference(reviewer_data)))
+    print ' %d unreviewed patches' % len(unreviewed)
+    if '--show-unreviewed' in sys.argv:
+        for patch_number in unreviewed:
+            print 'https://review.openstack.org/#/c/%d/' % patch_number

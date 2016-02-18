@@ -36,6 +36,10 @@ def load_reviewers(filename):
 
 contrib_emails = load_reviewers(REVIEWS_FILENAME)
 
+# idea: make some patches count more for weight
+# idea: make a first review on an unreviewed patch count more
+# goal: what do I do? reviews: click this link and write down what you think
+
 def load_weights(filename):
     weights = {}
     with(open(filename, 'rb')) as f:
@@ -49,9 +53,8 @@ def load_weights(filename):
 
 weights = load_weights(PERCENT_ACTIVE_FILENAME)
 
-def load_starred_patches():
+def load_starred_patches(subject_len_limit):
     all_stars = defaultdict(list)
-    subject_len_limit = 50
     len_contrib_emails = len(contrib_emails)
     print 'Total emails to get info for: %d' % len_contrib_emails
     for i, (email, starer_name) in enumerate(contrib_emails):
@@ -91,20 +94,26 @@ def weight_stars(stars_by_starer):
         all_stars.extend(starred)
     return all_stars
 
-try:
-    stars_by_starer = json.load(open(DATA_FILENAME))
-except IOError:
-    stars_by_starer = load_starred_patches()
-    json.dump(stars_by_starer, open(DATA_FILENAME, 'wb'))
+def get_ordered_patches(subject_len_limit=50):
+    try:
+        stars_by_starer = json.load(open(DATA_FILENAME))
+    except IOError:
+        stars_by_starer = load_starred_patches(subject_len_limit)
+        json.dump(stars_by_starer, open(DATA_FILENAME, 'wb'))
 
-all_stars = weight_stars(stars_by_starer)
+    all_stars = weight_stars(stars_by_starer)
 
-# so now that we have the starred patches, count them
-ctr = Counter(all_stars)
-ordered = ctr.most_common()
-template = '%s (%s) - %s - (count: %s)'
-for i, (patch, count) in enumerate(ordered):
-    if i > 20:
-        break
-    number, subject, owner, status = patch
-    print template % (subject, owner, number, count)
+    # so now that we have the starred patches, count them
+    ctr = Counter(all_stars)
+    ordered = ctr.most_common()
+
+    return ordered
+
+if __name__ == '__main__':
+    ordered = get_ordered_patches()
+    template = '%s (%s) - %s - (count: %s)'
+    for i, (patch, count) in enumerate(ordered):
+        if i > 20:
+            break
+        number, subject, owner, status = patch
+        print template % (subject, owner, number, count)

@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Swift Community Dashboard</title>
+<link href="styles.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+</head>
+<body>
+<h1>Swift Community</h1>
+
+<div id="review_stats">
+    <h2>Review Stats</h2>
+    <div id="open_patches"><span>Open Patches</span><span>{open_patches}</span></div>
+    <div id="owner_response"><span>Owner response time</span><span>{owner_response}</span></div>
+    <div id="reviewer_response"><span>Reviewer response time</span><span>{reviewer_response}</span></div>
+    <div id="winning"><span>{winner} are winning!</span></div>
+    <div id="unreviewed_patches"><span>Unreviewed patches</span><span>{unreviewed_patches}</span></div>
+</div>
+<div id="community_stars">
+    <h3>Community Starred Patches</h3>
+    <ol>
+        {community_stars}
+    </ol>
+</div>
+<div id="last_backups">
+</div>
+<div id="current_time">
+    Stats at <span>{current_time}</span>
+</div>
+</body>
+</html>
