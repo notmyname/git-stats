@@ -45,7 +45,6 @@ def load_data(filename, subject_len_limit=50):
                     continue
                 if review_comment['reviewer']['name'].endswith(' CI'):
                     continue
-                message = review_comment['message']
                 timestamp = review_comment['timestamp']
                 if reviewer in bots:
                     continue
