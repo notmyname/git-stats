@@ -12,7 +12,7 @@ cd /Users/john/Documents/git-stats
 ./make_dashboard.py
 
 # upload the dashboard
-deploy_swift_dash
+/Users/john/bin/deploy_swift_dash
 
 echo 'dashboard recreated and deployed'
 
