@@ -5,6 +5,9 @@
 import json
 import datetime
 import sys
+from collections import defaultdict
+
+from ascii_graph import Pyasciigraph
 
 import stats
 
@@ -22,6 +25,7 @@ bots = (
 def load_data(filename, subject_len_limit=50):
     patch_data = {}
     unreviewed_patches = []
+    no_follow_ups = []
     with open(filename, 'rb') as f:
         for line in f:
             if line:
@@ -67,38 +71,54 @@ def load_data(filename, subject_len_limit=50):
                     pass
                 recent_timestamp = timestamp
                 last_is_owner = is_owner
+            owner = review_data['owner']['name']
+            subject = review_data['subject']
+            if len(subject) > subject_len_limit:
+                subject = subject[:(subject_len_limit - 3)] + '...'
             if owner_deltas:
                 owner_avg = float(sum(owner_deltas)) / len(owner_deltas)
             else:
                 owner_avg = 0
+                no_follow_ups.append((patch_number, subject, owner, review_data['status']))
             if reviewer_deltas:
                 reviewer_avg = float(sum(reviewer_deltas)) / len(reviewer_deltas)
             else:
                 # no reviews ever!
                 reviewer_avg = 0
-                subject = review_data['subject']
-                owner = review_data['owner']['name']
-                subject = review_data['subject']
-                if len(subject) > subject_len_limit:
-                    subject = subject[:(subject_len_limit - 3)] + '...'
                 unreviewed_patches.append((patch_number, subject, owner, review_data['status']))
                 # print patch_number
             if any((owner_avg, reviewer_avg)):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)
-    return patch_data, unreviewed_patches
+    return patch_data, unreviewed_patches, no_follow_ups
+
+def histogram(data, name):
+    name = 'count of %s response time by week' % name
+    g = Pyasciigraph()
+    buckets = defaultdict(int)
+    for item in data:
+        buckets[int(item // (86400 * 7))] += 1
+    for line in g.graph(name, ((k, v) for k, v in buckets.iteritems())):
+        print line
 
 if __name__ == '__main__':
-    project = 'swift'
-    if '--nova' in sys.argv:
-        project = 'nova'
-    REVIEWS_FILENAME = '%s-open-comments.patches' % project
+    REVIEWS_FILENAME = 'swift-open-comments.patches'
     if '--all-patches' in sys.argv:
-        REVIEWS_FILENAME = '%s_gerrit_history.patches' % project
+        REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+    timing_data, unreviewed, owner_no_follow_ups = load_data(REVIEWS_FILENAME)
 
-    timing_data, unreviewed = load_data(REVIEWS_FILENAME)
+    # REVIEWS_FILENAME = 'swiftclient-open-comments.patches'
+    # if '--all-patches' in sys.argv:
+    #     REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
+    # client_timing_data, client_unreviewed, client_owner_no_follow_ups = load_data(REVIEWS_FILENAME)
+
+    # timing_data.update(client_timing_data)
+    # unreviewed.extend(client_unreviewed)
 
     owner_data = [x[0] for x in timing_data.itervalues()]
     reviewer_data = [x[1] for x in timing_data.itervalues()]
+
+    histogram(owner_data, 'owner')
+    histogram(reviewer_data, 'reviewer')
 
     print 'Stats for %d patches' % len(timing_data.keys())
     print 'Patch owner review stats:'
@@ -106,6 +126,7 @@ if __name__ == '__main__':
     print ' median: %s' % str(datetime.timedelta(seconds=stats.median(owner_data)))
     print ' std_deviation: %s' % str(datetime.timedelta(seconds=stats.std_deviation(owner_data)))
     print ' max_difference: %s' % str(datetime.timedelta(seconds=stats.min_max_difference(owner_data)))
+    print ' %d patches with no follow-up' % len(owner_no_follow_ups)
     print
     print 'Patch reviewer stats:'
     print ' mean: %s' % str(datetime.timedelta(seconds=stats.mean(reviewer_data)))

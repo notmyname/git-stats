@@ -6,14 +6,17 @@ body {
     font-size: 12pt;
 }
 
-body .section {
-    /*float: left;*/
+.section {
     -webkit-border-radius: 10px;
     background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#333), to(#111));
     color: #ccc;
-    width: 100%;
     padding: 10px;
     margin: 0 10px;
+    width: 600px;
+}
+
+#unreviewed_list {
+    margin: 0;
 }
 
 body div>div {
@@ -45,7 +48,7 @@ body div>div {
     text-decoration: underline;
 }
 
-.section ol a .owner {
+.section ol a .owner, .section ol a .project {
     color: #ccc;
     font-size: 10pt;
 }
@@ -64,6 +67,10 @@ h2, h3 {
     display: inline-block;
     margin: 0 auto;
     padding: 0;
+}
+
+#winning {
+    text-align: center;
 }
 
 @media handheld, only screen and (max-device-width: 480px) {

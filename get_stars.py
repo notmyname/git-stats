@@ -14,6 +14,7 @@ cmd = (
 )
 
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+CLIENT_REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
 DATA_FILENAME = 'all_stars.data'
 PERCENT_ACTIVE_FILENAME = 'percent_active.data'
 
@@ -35,6 +36,7 @@ def load_reviewers(filename):
     return reviewers
 
 contrib_emails = load_reviewers(REVIEWS_FILENAME)
+contrib_emails.union(load_reviewers(CLIENT_REVIEWS_FILENAME))
 
 # idea: make some patches count more for weight
 # idea: make a first review on an unreviewed patch count more

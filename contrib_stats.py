@@ -67,8 +67,10 @@ def get_max_min_days_ago():
     return oldest_date.date(), newest_date.date()
 
 FIRST_DATE, LAST_DATE = get_max_min_days_ago()
-FILENAME = 'contrib_stats.data'
+COMMITS_FILENAME = 'contrib_stats.data'
+CLIENT_COMMITS_FILENAME = 'client_contrib_stats.data'
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
+CLIENT_REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
 PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'
 PERCENT_ACTIVE_FILENAME = 'percent_active.data'
 
@@ -425,7 +427,7 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
 if __name__ == '__main__':
     # load patch info
     try:
-        contribs_by_date, authors_by_count = load_commits(FILENAME)
+        contribs_by_date, authors_by_count = load_commits(COMMITS_FILENAME)
         # update the data first
         most_recent_date = max(contribs_by_date.keys())
         most_recent_date = datetime.datetime.strptime(
@@ -444,16 +446,19 @@ if __name__ == '__main__':
                 if a not in authors_by_count:
                     authors_by_count[a] = 0
                 authors_by_count[a] += c
-            save_commits(contribs_by_date, authors_by_count, FILENAME)
+            save_commits(contribs_by_date, authors_by_count, COMMITS_FILENAME)
         else:
-            print 'Data file (%s) is up to date.' % FILENAME
+            print 'Data file (%s) is up to date.' % COMMITS_FILENAME
     except (IOError, ValueError), exc:
         print exc
         contribs_by_date, authors_by_count = get_data(FIRST_DATE, LAST_DATE)
-        save_commits(contribs_by_date, authors_by_count, FILENAME)
+        save_commits(contribs_by_date, authors_by_count, COMMITS_FILENAME)
 
     # load review info
     reviewers_by_date = load_reviewers(REVIEWS_FILENAME)
+    client_reviewers_by_date = load_reviewers(CLIENT_REVIEWS_FILENAME)
+    for d, person_set in client_reviewers_by_date.iteritems():
+        reviewers_by_date[d].update(person_set)
 
     contrib_window = datetime.timedelta(days=14)
     review_window = datetime.timedelta(days=5)

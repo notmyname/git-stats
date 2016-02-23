@@ -10,6 +10,7 @@ import get_stars
 
 TEMPLATE = 'dash_template.html'
 REVIEWS_FILENAME = 'swift-open-comments.patches'
+CLIENT_REVIEWS_FILENAME = 'swiftclient-open-comments.patches'
 OUTPUT_FILENAME = 'swift_community_dashboard.html'
 
 template_vars = {
@@ -21,20 +22,25 @@ template_vars = {
     'community_stars': '',     # html snippet for community starred patches
     'current_time': '',        # timestamp when this dashboard was created
     'unreviewed_list': '',     # html snippet for unreviewed patches
+    'no_follow_ups': '',       # number of patches that have no owner follow up after review
 }
 
 template_vars['current_time'] = datetime.strftime(datetime.now(),
                                                   '%H:%M:%S %h %d, %Y')
 
-timing_data, unreviewed_patchnums = review_timings.load_data(REVIEWS_FILENAME)
+timing_data, unreviewed_patchnums, owner_no_follow_ups = review_timings.load_data(REVIEWS_FILENAME)
+client_timing_data, client_unreviewed_patchnums, client_owner_no_follow_ups = review_timings.load_data(CLIENT_REVIEWS_FILENAME)
+
+# timing_data.update(client_timing_data)
 
 owner_data = [x[0] for x in timing_data.itervalues()]
 reviewer_data = [x[1] for x in timing_data.itervalues()]
 
 template_vars['open_patches'] = '%d' % len(timing_data.keys())
-template_vars['unreviewed_patches'] = '%d' % len(unreviewed_patchnums)
-owner_time = timedelta(seconds=stats.median(owner_data))
-reviewer_time = timedelta(seconds=stats.median(reviewer_data))
+template_vars['unreviewed_patches'] = '%d' % (len(unreviewed_patchnums) )#+ len(client_unreviewed_patchnums))
+template_vars['no_follow_ups'] = '%d' % (len(owner_no_follow_ups) )#+ len(client_owner_no_follow_ups))
+owner_time = timedelta(seconds=stats.mean(owner_data))
+reviewer_time = timedelta(seconds=stats.mean(reviewer_data))
 if owner_time < reviewer_time:
     template_vars['winner'] = 'Owners'
 else:
@@ -43,7 +49,8 @@ template_vars['owner_response'] = str(owner_time)
 template_vars['reviewer_response'] = str(reviewer_time)
 
 patch_tmpl = '<li><a href="https://review.openstack.org/#/c/{number}/">' \
-             '<span class="subject">{subject}</span> ' \
+             '<span class="subject">{subject}</span> - ' \
+             '<span class="project">{project}</span> - ' \
              '<span class="owner">{owner}</span></a></li>'
 out = []
 community_starred_patches = get_stars.get_ordered_patches()
@@ -51,12 +58,14 @@ for i, (patch, count) in enumerate(community_starred_patches):
     if i >= 20:
         break
     number, subject, owner, status = patch
-    out.append(patch_tmpl.format(number=number, subject=subject, owner=owner))
+    out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project=''))
 template_vars['community_stars'] = '\n'.join(out)
 
 out = []
 for num, subject, owner, status in reversed(unreviewed_patchnums):
-    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8')))
+    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift'))
+# for num, subject, owner, status in reversed(client_unreviewed_patchnums):
+#     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swiftclient'))
 template_vars['unreviewed_list'] = '\n'.join(out)
 
 tmpl = open(TEMPLATE, 'rb').read()
