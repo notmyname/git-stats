@@ -33,14 +33,16 @@ client_timing_data, client_unreviewed_patchnums, client_owner_no_follow_ups = re
 
 # timing_data.update(client_timing_data)
 
-owner_data = [x[0] for x in timing_data.itervalues()]
-reviewer_data = [x[1] for x in timing_data.itervalues()]
+# trim off the top and bottom 5%
+outliers = int(len(timing_data) * .1) // 2
+owner_data = sorted([x[0] for x in timing_data.itervalues()])[outliers:-outliers]
+reviewer_data = sorted([x[1] for x in timing_data.itervalues()])[outliers:-outliers]
 
 template_vars['open_patches'] = '%d' % len(timing_data.keys())
 template_vars['unreviewed_patches'] = '%d' % (len(unreviewed_patchnums) )#+ len(client_unreviewed_patchnums))
 template_vars['no_follow_ups'] = '%d' % (len(owner_no_follow_ups) )#+ len(client_owner_no_follow_ups))
-owner_time = timedelta(seconds=stats.mean(owner_data))
-reviewer_time = timedelta(seconds=stats.mean(reviewer_data))
+owner_time = timedelta(seconds=stats.median(owner_data))
+reviewer_time = timedelta(seconds=stats.median(reviewer_data))
 if owner_time < reviewer_time:
     template_vars['winner'] = 'Owners'
 else:

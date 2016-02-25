@@ -114,8 +114,10 @@ if __name__ == '__main__':
     # timing_data.update(client_timing_data)
     # unreviewed.extend(client_unreviewed)
 
-    owner_data = [x[0] for x in timing_data.itervalues()]
-    reviewer_data = [x[1] for x in timing_data.itervalues()]
+    outliers = int(len(timing_data) * .1) // 2
+
+    owner_data = sorted([x[0] for x in timing_data.itervalues()])[outliers:-outliers]
+    reviewer_data = sorted([x[1] for x in timing_data.itervalues()])[outliers:-outliers]
 
     histogram(owner_data, 'owner')
     histogram(reviewer_data, 'reviewer')
