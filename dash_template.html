@@ -9,13 +9,14 @@
 <meta http-equiv="refresh" content="600"/>
 </head>
 <body>
+<div id="content">
 <h1>Swift Community</h1>
 
 <div class="section" id="review_stats">
     <h2>Review Stats</h2>
     <div id="open_patches"><span>Open Patches</span><span>{open_patches}</span></div>
     <div id="owner_response"><span>Owner response time</span><span>{owner_response}</span></div>
-    <div id="no_follow_ups"><span>Patches with no owner follow up</span><span>{no_follow_ups}</span></div>
+    <div id="no_follow_ups"><span>Patches waiting on owner follow up</span><span>{no_follow_ups}</span></div>
     <div id="reviewer_response"><span>Reviewer response time</span><span>{reviewer_response}</span></div>
     <div id="unreviewed_patches"><span>Unreviewed patches</span><span>{unreviewed_patches}</span></div>
     <div id="winning"><span>{winner} are winning!</span></div>
@@ -34,6 +35,7 @@
 </div>
 <div id="current_time">
     Stats at <span>{current_time}</span>
+</div>
 </div>
 </body>
 </html>

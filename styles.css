@@ -1,26 +1,21 @@
 body {
-    width: 600px;
-    background: rgb(34,34,34);
+    background: rgb(24,24,24);
     color: #ccc;
     font-family: Futura, sans;
     font-size: 12pt;
 }
 
+#content {
+    position: relative;
+}
+
 .section {
-    -webkit-border-radius: 10px;
-    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#333), to(#111));
+    border-radius: 10px;
+    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#444), to(#222));
     color: #ccc;
     padding: 10px;
-    margin: 0 10px;
+    margin: 5px 10px;
     width: 600px;
-}
-
-#unreviewed_list {
-    margin: 0;
-}
-
-body div>div {
-    margin-bottom: 10px;
 }
 
 #current_time {
@@ -55,9 +50,6 @@ body div>div {
 
 h1, h2, h3 {
     text-align: center;
-}
-
-h2, h3 {
     margin: 0;
     padding: 1px;
 }
