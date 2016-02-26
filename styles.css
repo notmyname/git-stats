@@ -11,7 +11,7 @@ body {
 
 .section {
     border-radius: 10px;
-    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#444), to(#222));
+    background: linear-gradient(to bottom, #444, #222 100%);
     color: #ccc;
     padding: 10px;
     margin: 5px 10px;
