@@ -264,7 +264,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
 
     person_labels = []
     person_active = []
-    limited_all_dates_look_back = 365 * 2  # weighting looks back 2 years
+    limited_all_dates_look_back = 365 * 1
     for person, (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data) in graphable_data.iteritems():
         name = person.split('<', 1)[0].strip()
         person_labels.append((yval, name))
@@ -461,7 +461,7 @@ if __name__ == '__main__':
         reviewers_by_date[d].update(person_set)
 
     contrib_window = datetime.timedelta(days=14)
-    review_window = datetime.timedelta(days=5)
+    review_window = datetime.timedelta(days=3)
 
     # combine data sources down to one set of contributors and dates
     people_by_date = defaultdict(lambda: defaultdict(set))
