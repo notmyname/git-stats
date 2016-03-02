@@ -6,6 +6,7 @@ cd /Users/john/Documents/git-stats
 PAGE_SIZE=500
 
 # grab comments
+echo "fetch review comments"
 PATCHES="swift_gerrit_history.patches"
 QUERY="project:openstack/swift branch:master limit:$PAGE_SIZE --comments --all-reviewers is:mergeable"
 ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
@@ -19,6 +20,7 @@ while [[ $MORE == "true" ]]; do
 done
 
 # grab open patches (that aren't WIP)
+echo "fetch open patches not WIP"
 PATCHES="swift-open.patches"
 QUERY="project:openstack/swift branch:master status:open NOT label:Workflow\<=-1 limit:$PAGE_SIZE is:mergeable"
 ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
@@ -32,6 +34,7 @@ while [[ $MORE == "true" ]]; do
 done
 
 # comments on open patches that aren't WIP
+echo "fetch comments on non-WIP patches"
 PATCHES="swift-open-comments.patches"
 QUERY="project:openstack/swift branch:master status:open NOT label:Workflow\<=-1 limit:$PAGE_SIZE --comments --all-reviewers is:mergeable"
 ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES
@@ -45,6 +48,7 @@ while [[ $MORE == "true" ]]; do
 done
 
 # grab closed patches
+echo "fetch closed patches"
 PATCHES="swift-closed.patches"
 QUERY="project:openstack/swift branch:master status:closed NOT label:Workflow\<=-1 limit:$PAGE_SIZE is:mergeable"
 ssh -p29418 notmyname@review.openstack.org gerrit query --format JSON $QUERY >$PATCHES

@@ -218,7 +218,9 @@ def map_people(unmapped_people):
         mapped_people.add(good_name)
     return mapped_people
 
-def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
+def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_window):
+    # this graph will show a little bit of the future
+    end_date = datetime.datetime.strptime(end_date[:10], '%Y-%m-%d') + extra_window
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
     graphable_data = {}
@@ -310,15 +312,17 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date):
     pyplot.ylim(-1, person_labels[-1][0] + 1)
     x_tick_locs = []
     x_tick_vals = []
+    today = str(datetime.datetime.now())[:10]
     for i, d in enumerate(all_dates):
         if d in RELEASE_DATES:
             pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
         if not i % 60:
             x_tick_locs.append(i)
             x_tick_vals.append(d)
-    if len(all_dates) - x_tick_locs[-1] > 30:
-        x_tick_locs.append(len(all_dates))
-        x_tick_vals.append(all_dates[-1])
+        if d == today:
+            pyplot.axvline(x=i, alpha=0.8, color='#cf9b46', linewidth=2)
+    x_tick_locs.append(len(all_dates))
+    x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 20)
     pyplot.grid(b=True, which='both', axis='x')
@@ -526,6 +530,6 @@ if __name__ == '__main__':
     print msg
 
     # draw graphs
-    draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date)
+    draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date, max(contrib_window, review_window))
     draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
