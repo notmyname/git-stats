@@ -1,7 +1,7 @@
 body {
     background: rgb(24,24,24);
     color: #ccc;
-    font-family: Futura, sans;
+    font-family: Futura, sans-serif;
     font-size: 12pt;
 }
 
@@ -11,6 +11,7 @@ body {
 
 .section {
     border-radius: 10px;
+    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#444), to(#222));
     background: linear-gradient(to bottom, #444, #222 100%);
     color: #ccc;
     padding: 10px;
@@ -45,7 +46,7 @@ body {
 
 .section ol a .owner, .section ol a .project {
     color: #ccc;
-    font-size: 10pt;
+    font-size: 80%;
 }
 
 h1, h2, h3 {
@@ -90,5 +91,30 @@ h1, h2, h3 {
     }
     #community_stars{
       float:right;
+    }
+}
+
+/*
+for the wall-mounted TV
+*/
+@media (min-width:1820px) {
+    body {
+        font-size: 18pt;
+    }
+    #content{
+        max-width:1800px;
+    }
+    .section{
+        background: #222;
+        float: left;
+        width: 850px;
+        padding: 10px;
+        margin: 5px 10px;
+    }
+    .section ol a .subject {
+        text-decoration: none;
+    }
+    #community_stars{
+        float: right;
     }
 }
