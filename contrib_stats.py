@@ -7,6 +7,11 @@ import re
 from matplotlib import pyplot
 import unicodedata
 
+from utils import RELEASE_DATES, excluded_authors, COMMITS_FILENAME, \
+    CLIENT_COMMITS_FILENAME, REVIEWS_FILENAME, CLIENT_REVIEWS_FILENAME, \
+    PERCENT_ACTIVE_FILENAME, date_range, map_people, map_one_person
+from parse_commits_into_json import load_commits
+
 
 class WindowQueue(object):
     def __init__(self, window_size):
@@ -38,20 +43,6 @@ class RollingSet(object):
         return len(self.all_els)
 
 
-def date_range(start_date, end_date, strings=True):
-    '''yields an inclusive list of dates'''
-    step = datetime.timedelta(days=1)
-    if isinstance(start_date, str):
-        start_date = datetime.datetime.strptime(start_date[:10], '%Y-%m-%d')
-    if isinstance(end_date, str):
-        end_date = datetime.datetime.strptime(end_date[:10], '%Y-%m-%d')
-    while start_date <= end_date:
-        if strings:
-            yield start_date.strftime('%Y-%m-%d')
-        else:
-            yield start_date
-        start_date += step
-
 def get_max_min_days_ago():
     '''returns the first and last dates of activity in a repo'''
     all_dates = subprocess.check_output(
@@ -67,105 +58,6 @@ def get_max_min_days_ago():
     return oldest_date.date(), newest_date.date()
 
 FIRST_DATE, LAST_DATE = get_max_min_days_ago()
-COMMITS_FILENAME = 'contrib_stats.data'
-CLIENT_COMMITS_FILENAME = 'client_contrib_stats.data'
-REVIEWS_FILENAME = 'swift_gerrit_history.patches'
-CLIENT_REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
-PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'
-PERCENT_ACTIVE_FILENAME = 'percent_active.data'
-
-excluded_authors = (
-    'Jenkins <jenkins@review.openstack.org>',
-    'OpenStack Proposal Bot <openstack-infra@lists.openstack.org>',
-    'OpenStack Jenkins <jenkins@openstack.org>',
-    'SwiftStack Cluster CI <openstack-ci@swiftstack.com>',
-    'Rackspace GolangSwift CI <mike+goci@weirdlooking.com>',
-    'Trivial Rebase <trivial-rebase@review.openstack.org>',
-    'Coraid CI <coraid-openstack-ci-all@mirantis.com>',
-    'Gerrit Code Review <review@openstack.org>',
-)
-
-RELEASE_DATES = (
-    '2010-07-19', # initial, 1.0.0
-    '2010-10-21', # austin, 1.1.0
-    '2011-02-03', # bexar, 1.2.0
-    '2011-04-15', # cactus, 1.3.0
-    '2011-05-27', # 1.4.0
-    '2011-06-14', # 1.4.1
-    '2011-07-25', # 1.4.2
-    '2011-09-12', # diablo, 1.4.3
-    '2011-11-24', # 1.4.4
-    '2012-01-04', # 1.4.5
-    '2012-02-08', # 1.4.6
-    '2012-03-09', # 1.4.7
-    '2012-03-22', # essex, 1.4.8
-    '2012-06-05', # 1.5.0
-    '2012-08-06', # 1.6.0
-    # '2012-09-13', # 1.7.0
-    # '2012-09-20', # 1.7.2
-    '2012-09-26', # folsom, 1.7.4
-    '2012-11-13', # 1.7.5
-    '2013-04-04', # grizzly, 1.8.0
-    '2013-07-02', # 1.9.0
-    '2013-08-13', # 1.9.1
-    '2013-10-17', # havana, 1.10.0
-    '2013-12-12', # 1.11.0
-    '2014-01-28', # 1.12.0
-    '2014-03-03', # 1.13.0
-    '2014-04-17', # icehouse, 1.13.1
-    '2014-07-07', # 2.0.0
-    '2014-09-01', # 2.1.0
-    '2014-10-16', # juno, 2.2.0
-    '2014-12-19', # 2.2.1
-    '2015-02-02', # 2.2.2
-    '2015-04-30', # kilo, 2.3.0
-    '2015-09-01', # 2.4.0
-    '2015-10-05', # liberty, 2.5.0
-    '2016-01-25', # 2.6.0
-)
-
-def save_commits(contribs_by_date, authors_by_count, filename):
-    listified = [(d, list(e)) for (d, e) in contribs_by_date.items()]
-    with open(filename, 'wb') as f:
-        json.dump((listified, authors_by_count), f)
-
-def load_commits(filename):
-    with open(filename, 'rb') as f:
-        (listified, authors_by_count) = json.load(f)
-    contribs_by_date = {d: set(e) for (d, e) in listified}
-    return contribs_by_date, authors_by_count
-
-def get_one_day(date):
-    next_day = date + datetime.timedelta(days=1)
-    cmd = ("git shortlog -es --since='@{%s}' --before='@{%s}'"
-           % (date.strftime('%Y-%m-%d'),
-              next_day.strftime('%Y-%m-%d')))
-    out = subprocess.check_output(cmd, shell=True).strip()
-    authors = set()
-    authors_by_count = defaultdict(int)
-    for line in out.split('\n'):
-        line = line.strip()
-        if line:
-            match = re.match(r'\d+\s+(.*)', line)
-            author = match.group(1)
-            author = author.decode('utf8')
-            if author not in excluded_authors:
-                authors.add(author)
-            authors_by_count[author] += 1
-    return authors, authors_by_count
-
-def get_data(start_date, end_date):
-    data = defaultdict(set)
-    authors_by_count = defaultdict(int)
-    # consider replacing with
-    # git rev-list --pretty=format:"%aN <%aE> %aI" HEAD | grep -v commit
-    for date in date_range(start_date, end_date, strings=False):
-        authors_for_day, by_count = get_one_day(date)
-        for a, c in by_count.items():
-            authors_by_count[a] += c
-        data[date.strftime('%Y-%m-%d')].update(authors_for_day)
-        print date  # how do I print only every 20 days?
-    return data, authors_by_count
 
 def load_reviewers(filename):
     reviewers_by_date = defaultdict(set)
@@ -185,38 +77,12 @@ def load_reviewers(filename):
                     continue
                 email = '<%s>' % reviewer['email']
                 name_email = '%s %s' % (reviewer['name'], email)
-                if name_email not in excluded_authors:
-                    reviewers_by_date[when].add(name_email)
+                # name_email = name_email.decode('utf8')
+                name_email = '%s %s' % (map_one_person(name_email), email)
+                if name_email.lower() in excluded_authors:
+                    continue
+                reviewers_by_date[when].add(name_email)
     return reviewers_by_date
-
-the_people_map = {}
-
-def load_the_people_map():
-    raw_map = json.load(open(PEOPLE_MAP_FILENAME))
-    users = raw_map['users']
-    for record in users:
-        name = record['user_name']
-        for e in record['emails']:
-            the_people_map[e] = name
-
-load_the_people_map()
-
-def map_people(unmapped_people):
-    '''
-    maps people by email to a name
-
-    Lazy about non-ascii, lazy about name conflicts
-    '''
-    mapped_people = set()
-    for person in unmapped_people:
-        person = unicodedata.normalize('NFKD', person).encode('ascii','ignore')
-        name, email = person.split('<', 1)
-        email = email[:-1].strip()
-        name = name.strip()
-        good_name = the_people_map.get(email, name)
-        good_name = unicodedata.normalize('NFKD', unicode(good_name)).encode('ascii','ignore').title()
-        mapped_people.add(good_name)
-    return mapped_people
 
 def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_window):
     # this graph will show a little bit of the future
@@ -324,7 +190,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_win
     x_tick_locs.append(len(all_dates))
     x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
-    pyplot.xlim(-1, x_tick_locs[-1] + 20)
+    pyplot.xlim(-5, x_tick_locs[-1] + 20)
     pyplot.grid(b=True, which='both', axis='x')
     vertical_size_per_person = 0.3
     vertical_size = vertical_size_per_person * len(person_labels)
@@ -430,33 +296,13 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
 
 if __name__ == '__main__':
     # load patch info
-    try:
-        contribs_by_date, authors_by_count = load_commits(COMMITS_FILENAME)
-        # update the data first
-        most_recent_date = max(contribs_by_date.keys())
-        most_recent_date = datetime.datetime.strptime(
-            most_recent_date, '%Y-%m-%d').date()
-        print 'Last date found in data file:', most_recent_date
-        print 'Last date found in source repo:', LAST_DATE
-        if most_recent_date < LAST_DATE:
-            print 'Updating previous data with data since %s...' % most_recent_date
-            recent_data, new_by_count = get_data(most_recent_date, LAST_DATE)
-            for date in recent_data:
-                if date in contribs_by_date:
-                    contribs_by_date[date].update(recent_data[date])
-                else:
-                    contribs_by_date[date] = recent_data[date]
-            for a, c in new_by_count.items():
-                if a not in authors_by_count:
-                    authors_by_count[a] = 0
-                authors_by_count[a] += c
-            save_commits(contribs_by_date, authors_by_count, COMMITS_FILENAME)
-        else:
-            print 'Data file (%s) is up to date.' % COMMITS_FILENAME
-    except (IOError, ValueError), exc:
-        print exc
-        contribs_by_date, authors_by_count = get_data(FIRST_DATE, LAST_DATE)
-        save_commits(contribs_by_date, authors_by_count, COMMITS_FILENAME)
+    contribs_by_date, ts_by_person = load_commits()
+    # update the data first
+    most_recent_date = max(contribs_by_date.keys())
+    most_recent_date = datetime.datetime.strptime(
+        most_recent_date, '%Y-%m-%d').date()
+    print 'Last date found in data file:', most_recent_date
+    print 'Last date found in source repo:', LAST_DATE
 
     # load review info
     reviewers_by_date = load_reviewers(REVIEWS_FILENAME)
@@ -493,18 +339,34 @@ if __name__ == '__main__':
     for date in date_range(global_first_date, global_last_date):
         contribs = contribs_by_date.get(date, set())
         reviews = reviewers_by_date.get(date, set())
-        contribs = map_people(contribs)
-        reviews = map_people(reviews)
-        people_by_date[date]['contribs'] = contribs
-        people_by_date[date]['reviews'] = reviews
-        unique_reviewer_set.update(reviews)
-        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+        mapped_contribs = set()
         for person in contribs:
+            name, email = person.split('<', 1)
+            email = '<' + email
+            p = '%s %s' % (map_one_person(person), email)
+            if p.lower() in excluded_authors:
+                continue
+            mapped_contribs.add(name)
+        mapped_reviews = set()
+        for person in reviews:
+            name, email = person.split('<', 1)
+            email = '<' + email
+            p = '%s %s' % (map_one_person(person), email)
+            if p.lower() in excluded_authors:
+                continue
+            mapped_reviews.add(name)
+        people_by_date[date]['contribs'] = mapped_contribs
+        people_by_date[date]['reviews'] = mapped_reviews
+        unique_reviewer_set.update(mapped_reviews)
+        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+        # next interesting thing to do here is make more than one event per day count more
+        # right now all we're really calculating is person-day activity
+        for person in mapped_contribs:
             end_date = date_obj + contrib_window
             for d in date_range(date, end_date):
                 dates_by_person[person]['contribs'].add(d)
                 people_by_date[d]['contribs'].add(person)
-        for person in reviews:
+        for person in mapped_reviews:
             end_date = date_obj + review_window
             for d in date_range(date, end_date):
                 dates_by_person[person]['reviews'].add(d)
@@ -523,7 +385,7 @@ if __name__ == '__main__':
                 s = sum(actives[aw][-r_a_w:])
                 actives_avg[aw][r_a_w].append(float(s) / denom)
 
-    msg.append('%d patch authors found' % len(authors_by_count))
+    msg.append('%d patch authors found' % len(ts_by_person))
     msg.append('%d review commentors found' % len(unique_reviewer_set))
     msg.append('%d total unique contributors found' % len(dates_by_person))
     msg = '\n'.join(msg)

@@ -33,7 +33,7 @@ client_timing_data, client_unreviewed_patchnums, client_owner_no_follow_ups = re
 
 # timing_data.update(client_timing_data)
 
-# trim off the top and bottom 5%
+# trim off the top and bottom few percent
 outliers = int(len(timing_data) * .1) // 2
 owner_data = sorted([x[0] for x in timing_data.itervalues()])[outliers:-outliers]
 reviewer_data = sorted([x[1] for x in timing_data.itervalues()])[outliers:-outliers]

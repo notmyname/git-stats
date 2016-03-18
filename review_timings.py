@@ -11,19 +11,6 @@ from ascii_graph import Pyasciigraph
 
 import stats
 
-'''
-TODO
-
-Make a list for clay of the patches that he -1'd but have an owner follow-up,
-sorted by the community stars weights.
-
-Make a script that takes an email address and gives you a list of stuff to
-review and bugs to triage.
-
-encouraging fast reviews is counter to getting high priority patches reviewed
-
-'''
-
 bots = (
     'jenkins@review.openstack.org',
     'openstack-infra@lists.openstack.org',
