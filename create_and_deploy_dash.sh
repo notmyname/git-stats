@@ -5,8 +5,14 @@ set -e
 ORIGPWD=`pwd`
 cd /Users/john/Documents/git-stats
 
-# update gerrit stats
+# get commit history
+./get_commit_history.sh
+
+# get reviewer history
 ./build_swift_gerrit_history.sh
+
+# build weightings and graphs
+./swift_contrib_stats.sh
 
 # rebuild the dashboard
 ./make_dashboard.py

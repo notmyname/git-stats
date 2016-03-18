@@ -239,6 +239,24 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
     pyplot.close()
 
+    # small verison
+    window = 90
+    for aw, rolling_avg_windows in actives_windows:
+        for r_a_w in rolling_avg_windows[:1]:  # the first window configured
+            pyplot.plot(x_vals[:window], actives_avg[aw][r_a_w][-window:], '-',
+                        label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
+    pyplot.grid(b=False, which='both', axis='both')
+    pyplot.xticks([], [])
+    pyplot.yticks([], [])
+    pyplot.xlim(-1, window + 1)
+    ax = pyplot.gca()
+    ax.set_frame_on(True)
+    ax.set_axis_bgcolor('black')  # change to (24, 24, 24)
+    fig = pyplot.gcf()
+    fig.set_size_inches(2, 2./3)
+    fig.savefig('active_contribs_small.png', bbox_inches='tight', pad_inches=0)
+    pyplot.close()
+
 def draw_total_contributors_graph(people_by_date, start_date, end_date):
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
@@ -285,12 +303,27 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
         x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
-    pyplot.grid(b=True, which='both', axis='both')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
     pyplot.grid(b=True, which='both', axis='both')
     fig = pyplot.gcf()
     fig.set_size_inches(24, 8)
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
+    # small verison
+    window = 90
+    pyplot.plot(x_vals[:window], total_yvals[-window:], '-', color='red',
+               label="Total contributors", drawstyle="steps", linewidth=3)
+    pyplot.grid(b=False, which='both', axis='both')
+    pyplot.xticks([], [])
+    pyplot.yticks([], [])
+    pyplot.xlim(-1, window + 1)
+    ax = pyplot.gca()
+    ax.set_frame_on(True)
+    ax.set_axis_bgcolor('black')  # change to (24, 24, 24)
+    fig = pyplot.gcf()
+    fig.set_size_inches(2, 2. / 3)
+    fig.savefig('total_contribs_small.png', bbox_inches='tight', pad_inches=0)
     pyplot.close()
 
 

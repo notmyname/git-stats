@@ -12,6 +12,8 @@ cd ${SWIFTDIR}
 python "$ORIGPWD"/contrib_stats.py $@
 mv ${SWIFTDIR}/active_contribs.png ${ORIGPWD}/active_contribs.png
 mv ${SWIFTDIR}/total_contribs.png ${ORIGPWD}/total_contribs.png
+mv ${SWIFTDIR}/active_contribs_small.png ${ORIGPWD}/active_contribs_small.png
+mv ${SWIFTDIR}/total_contribs_small.png ${ORIGPWD}/total_contribs_small.png
 mv ${SWIFTDIR}/contrib_activity.png ${ORIGPWD}/contrib_activity.png
 mv ${SWIFTDIR}/contrib_stats.data ${ORIGPWD}/contrib_stats.data
 mv ${SWIFTDIR}/swift_gerrit_history.patches ${ORIGPWD}/swift_gerrit_history.patches
