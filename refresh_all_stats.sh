@@ -21,7 +21,10 @@ rm -f all_stars.data
 ./get_stars.sh
 
 # rebuild the dashboard
-./create_and_deploy_dash.sh
+./make_dashboard.py
+
+# upload the dashboard
+/Users/john/bin/deploy_swift_dash
 
 echo 'recreated all stats'
 

@@ -14,6 +14,10 @@ cd /Users/john/Documents/git-stats
 # build weightings and graphs
 ./swift_contrib_stats.sh
 
+# upload the images in the dashboard
+/Users/john/Documents/cf_dropbox/cf_drop.py active_contribs_small.png
+/Users/john/Documents/cf_dropbox/cf_drop.py total_contribs_small.png
+
 # rebuild the dashboard
 ./make_dashboard.py
 

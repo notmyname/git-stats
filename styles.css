@@ -122,8 +122,9 @@ for the wall-mounted TV
     .section{
         background: #222;
         float: left;
-        width: 850px;
+        width: 845px;
         padding: 10px;
+        padding-left: 25px;
         margin: 5px 10px;
     }
     .section ol a .subject {
