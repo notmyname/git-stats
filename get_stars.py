@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 
 cmd = (
 '/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '
-'--format JSON starredby:"%s" status:open\''
+'--format JSON starredby:"%s" status:open (project:openstack/swift OR project:openstack/python-swiftclient)\''
 )
 
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
