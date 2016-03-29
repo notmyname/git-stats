@@ -1,8 +1,9 @@
 body {
     background: rgb(24,24,24);
     color: #ccc;
-    font-family: Futura, sans-serif;
+    font-family: Futura-Medium, sans-serif;
     font-size: 12pt;
+    line-height: 24pt;
 }
 
 #content {
@@ -53,20 +54,32 @@ h1, h2, h3 {
     text-align: center;
     margin: 0;
     padding: 1px;
+    margin-bottom: 10px;
 }
 
-#activity_spark>div{
+h1 {
+    padding: 10px;
+}
+
+#activity_spark>div {
     width: 100%;
-    clear: both;
-    margin: 0;
-    padding: 5px;
+    margin: 0 auto;
+    padding: 0 20%;
+}
+
+#activity_spark>div>div {
+    width: 30%;
+    display: inline-block;
+    margin: 0 auto;
+    padding: 0;
     text-align: center;
 }
 
-#activity_spark img {
-    margin: 0;
-    padding: 0;
-    display: inline-block;
+#activity_spark label {
+    width: 100%;
+    text-align: center;
+    display: block;
+    font-size: 80%;
 }
 
 #review_stats div>span {
@@ -122,15 +135,18 @@ for the wall-mounted TV
     .section{
         background: #222;
         float: left;
-        width: 845px;
+        width: 850px;
         padding: 10px;
-        padding-left: 25px;
-        margin: 5px 10px;
+        padding-left: 20px;
+        margin: 5px 8px;
     }
     .section ol a .subject {
         text-decoration: none;
     }
     #community_stars{
         float: right;
+    }
+    #activity_spark label {
+        font-size: 70%;
     }
 }

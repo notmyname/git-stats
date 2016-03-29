@@ -36,8 +36,14 @@
 <div class="section" id="activity_spark">
     <h3>Last 90 Day Activity</h3>
     <div>
-    <img src="http://d.not.mn/active_contribs_small.png" />
-    <img src="http://d.not.mn/total_contribs_small.png" />
+    <div>
+    <img id="actives_graph" src="http://d.not.mn/active_contribs_small.png" />
+    <label for="actives_graph">Active: {active_contributors}</label>
+    </div>
+    <div>
+    <img id="totals_graph" src="http://d.not.mn/total_contribs_small.png" />
+    <label for="totals_graph">Total: {total_contributors}</label>
+    </div>
     </div>
 </div>
 <div id="current_time">

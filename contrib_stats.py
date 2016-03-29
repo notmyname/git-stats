@@ -245,6 +245,7 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
         for r_a_w in rolling_avg_windows[:1]:  # the first window configured
             pyplot.plot(x_vals[:window], actives_avg[aw][r_a_w][-window:], '-',
                         label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
+            print aw, r_a_w, actives_avg[aw][r_a_w][-1]
     pyplot.grid(b=False, which='both', axis='both')
     pyplot.xticks([], [])
     pyplot.yticks([], [])

@@ -7,22 +7,26 @@ from datetime import datetime, timedelta
 import review_timings
 import stats
 import get_stars
+from utils import PERCENT_ACTIVE_FILENAME, \
+    CLIENT_REVIEWS_FILENAME
+
+REVIEWS_FILENAME = 'swift-open-comments.patches'
 
 TEMPLATE = 'dash_template.html'
-REVIEWS_FILENAME = 'swift-open-comments.patches'
-CLIENT_REVIEWS_FILENAME = 'swiftclient-open-comments.patches'
 OUTPUT_FILENAME = 'swift_community_dashboard.html'
 
 template_vars = {
     'open_patches': '',        # number of open patches
     'owner_response': '',      # patch owner response time
-    'reviewer_response': '',    # patch reviewer response time
-    'winner': '',             # who's winning? patch owners or reviewers?
+    'reviewer_response': '',   # patch reviewer response time
+    'winner': '',              # who's winning? patch owners or reviewers?
     'unreviewed_patches': '',  # number of unreviewed patches
     'community_stars': '',     # html snippet for community starred patches
     'current_time': '',        # timestamp when this dashboard was created
     'unreviewed_list': '',     # html snippet for unreviewed patches
     'no_follow_ups': '',       # number of patches that have no owner follow up after review
+    'total_contributors': '',  # total number of contributors
+    'active_contributors': '', # number of active contributors
 }
 
 template_vars['current_time'] = datetime.strftime(datetime.now(),
@@ -49,6 +53,12 @@ else:
     template_vars['winner'] = 'Reviewers'
 template_vars['owner_response'] = str(owner_time)
 template_vars['reviewer_response'] = str(reviewer_time)
+
+with open(PERCENT_ACTIVE_FILENAME, 'rb') as f:
+    total_contributors = len(f.readlines())
+template_vars['total_contributors'] = total_contributors
+
+template_vars['active_contributors'] = 18
 
 patch_tmpl = '<li><a href="https://review.openstack.org/#/c/{number}/">' \
              '<span class="subject">{subject}</span> - ' \
