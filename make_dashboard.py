@@ -58,24 +58,26 @@ with open(PERCENT_ACTIVE_FILENAME, 'rb') as f:
     total_contributors = len(f.readlines())
 template_vars['total_contributors'] = total_contributors
 
-template_vars['active_contributors'] = 18
+template_vars['active_contributors'] = 24  # todo: automate this
 
-patch_tmpl = '<li><a href="https://review.openstack.org/#/c/{number}/">' \
+patch_tmpl = '<li><a title="relative score: {weight}%" href="https://review.openstack.org/#/c/{number}/">' \
              '<span class="subject">{subject}</span> - ' \
              '<span class="project">{project}</span> - ' \
              '<span class="owner">{owner}</span></a></li>'
 out = []
 community_starred_patches = get_stars.get_ordered_patches()
+biggest_count = float(community_starred_patches[0][1])
 for i, (patch, count) in enumerate(community_starred_patches):
     if i >= 20:
         break
+    weight = int((count / biggest_count) * 100)
     number, subject, owner, status = patch
-    out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project=''))
+    out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project='', weight=weight))
 template_vars['community_stars'] = '\n'.join(out)
 
 out = []
 for num, subject, owner, status in reversed(unreviewed_patchnums):
-    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift'))
+    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift', weight='100'))
 # for num, subject, owner, status in reversed(client_unreviewed_patchnums):
 #     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swiftclient'))
 template_vars['unreviewed_list'] = '\n'.join(out)
