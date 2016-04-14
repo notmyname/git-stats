@@ -81,6 +81,11 @@ h1 {
     font-size: 80%;
 }
 
+#activity_spark a {
+    text-decoration: none;
+    color: #ccc;
+}
+
 #review_stats div>span {
     width: 50%;
     display: inline-block;

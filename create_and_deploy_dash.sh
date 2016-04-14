@@ -17,6 +17,9 @@ cd /Users/john/Documents/git-stats
 # upload the images in the dashboard
 /Users/john/Documents/cf_dropbox/cf_drop.py active_contribs_small.png
 /Users/john/Documents/cf_dropbox/cf_drop.py total_contribs_small.png
+/Users/john/Documents/cf_dropbox/cf_drop.py active_contribs.png
+/Users/john/Documents/cf_dropbox/cf_drop.py total_contribs.png
+/Users/john/Documents/cf_dropbox/cf_drop.py contrib_activity.png
 
 # rebuild the dashboard
 ./make_dashboard.py
