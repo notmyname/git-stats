@@ -9,7 +9,8 @@ import unicodedata
 
 from utils import RELEASE_DATES, excluded_authors, COMMITS_FILENAME, \
     CLIENT_COMMITS_FILENAME, REVIEWS_FILENAME, CLIENT_REVIEWS_FILENAME, \
-    PERCENT_ACTIVE_FILENAME, date_range, map_people, map_one_person
+    PERCENT_ACTIVE_FILENAME, date_range, map_people, map_one_person, \
+    AVERAGES_FILENAME
 from parse_commits_into_json import load_commits
 
 
@@ -245,7 +246,6 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
         for r_a_w in rolling_avg_windows[:1]:  # the first window configured
             pyplot.plot(x_vals[:window], actives_avg[aw][r_a_w][-window:], '-',
                         label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
-            print aw, r_a_w, actives_avg[aw][r_a_w][-1]
     pyplot.grid(b=False, which='both', axis='both')
     pyplot.xticks([], [])
     pyplot.yticks([], [])
@@ -424,6 +424,10 @@ if __name__ == '__main__':
     msg.append('%d total unique contributors found' % len(dates_by_person))
     msg = '\n'.join(msg)
     print msg
+
+    with open(AVERAGES_FILENAME, 'wb') as f:
+        data = [actives_windows, actives_avg]
+        json.dump(data, f)
 
     # draw graphs
     draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date, max(contrib_window, review_window))

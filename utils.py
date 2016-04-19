@@ -8,6 +8,7 @@ REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 CLIENT_REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
 PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'
 PERCENT_ACTIVE_FILENAME = 'percent_active.data'
+AVERAGES_FILENAME = 'averages.data'
 
 excluded_authors = (
     'Jenkins <jenkins@review.openstack.org>'.lower(),

@@ -3,12 +3,13 @@
 # builds the swift community dashboard
 
 from datetime import datetime, timedelta
+import json
 
 import review_timings
 import stats
 import get_stars
 from utils import PERCENT_ACTIVE_FILENAME, \
-    CLIENT_REVIEWS_FILENAME
+    CLIENT_REVIEWS_FILENAME, AVERAGES_FILENAME
 
 REVIEWS_FILENAME = 'swift-open-comments.patches'
 
@@ -58,7 +59,16 @@ with open(PERCENT_ACTIVE_FILENAME, 'rb') as f:
     total_contributors = len(f.readlines())
 template_vars['total_contributors'] = total_contributors
 
-template_vars['active_contributors'] = 24  # todo: automate this
+with open(AVERAGES_FILENAME, 'rb') as f:
+    actives_windows, actives_avg = json.load(f)
+for aw, rolling_avg_windows in actives_windows[-1:]:
+    aw = str(aw)
+    for r_a_w in rolling_avg_windows[:1]:
+        r_a_w = str(r_a_w)
+        active_contributors = int(
+            int(actives_avg[aw][r_a_w][-1] * 10 + 5) / 10.)
+
+template_vars['active_contributors'] = active_contributors
 
 patch_tmpl = '<li><a title="relative score: {weight}%" href="https://review.openstack.org/#/c/{number}/">' \
              '<span class="subject">{subject}</span> - ' \
