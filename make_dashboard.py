@@ -20,7 +20,6 @@ template_vars = {
     'open_patches': '',        # number of open patches
     'owner_response': '',      # patch owner response time
     'reviewer_response': '',   # patch reviewer response time
-    'winner': '',              # who's winning? patch owners or reviewers?
     'unreviewed_patches': '',  # number of unreviewed patches
     'community_stars': '',     # html snippet for community starred patches
     'current_time': '',        # timestamp when this dashboard was created
@@ -48,10 +47,6 @@ template_vars['unreviewed_patches'] = '%d' % (len(unreviewed_patchnums) )#+ len(
 template_vars['no_follow_ups'] = '%d' % (len(owner_no_follow_ups) )#+ len(client_owner_no_follow_ups))
 owner_time = timedelta(seconds=stats.median(owner_data))
 reviewer_time = timedelta(seconds=stats.median(reviewer_data))
-if owner_time < reviewer_time:
-    template_vars['winner'] = 'Owners'
-else:
-    template_vars['winner'] = 'Reviewers'
 template_vars['owner_response'] = str(owner_time)
 template_vars['reviewer_response'] = str(reviewer_time)
 
