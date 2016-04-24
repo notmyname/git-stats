@@ -7,6 +7,7 @@ body {
 
 #content {
     position: relative;
+    max-width: 600px;
 }
 
 .section {
@@ -86,6 +87,14 @@ h1 {
     color: #ccc;
 }
 
+#review_stats {
+    width: 100%;
+}
+
+#review_stats .value {
+    color: #6f6;
+}
+
 #review_stats div>span {
     width: 50%;
     display: inline-block;
@@ -114,8 +123,27 @@ h1 {
 }
 
 @media(min-width:1315px){
-    #content{
-      max-width:1280px;
+    #content {
+      max-width: 1280px;
+    }
+    #review_stats {
+        width: 1240px;
+    }
+    #review_stats h3 {
+        display: none;
+    }
+    #review_stats div {
+        width: 20%;
+        display: inline;
+        float: left;
+        margin: 0;
+        padding: 0;
+        font-size: 75%;
+    }
+    #review_stats div>span {
+        display: block;
+        width: 100%;
+        text-align: center;
     }
     .section{
       float:left;
@@ -134,8 +162,27 @@ for the wall-mounted TV
         font-size: 18pt;
         line-height: 24pt;
     }
-    #content{
-        max-width:1800px;
+    #content {
+        max-width: 1800px;
+    }
+    #review_stats {
+        min-width: 1750px;
+    }
+    #review_stats h3 {
+        display: none;
+    }
+    #review_stats div {
+        width: 20%;
+        display: inline;
+        float: left;
+        margin: 0;
+        padding: 0;
+        font-size: 75%;
+    }
+    #review_stats div>span {
+        display: block;
+        width: 100%;
+        text-align: center;
     }
     .section{
         background: #222;
