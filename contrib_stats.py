@@ -227,8 +227,8 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
         if not i % 60:
             x_tick_locs.append(i)
             x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
     if len(all_dates) - x_tick_locs[-1] > 30:
-        x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.grid(b=True, which='both', axis='both')
@@ -300,8 +300,8 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
         if not i % 60:
             x_tick_locs.append(i)
             x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
     if len(all_dates) - x_tick_locs[-1] > 30:
-        x_tick_locs.append(len(all_dates))
         x_tick_vals.append(all_dates[-1])
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
