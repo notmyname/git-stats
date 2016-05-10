@@ -161,6 +161,7 @@ for the wall-mounted TV
         background: #000;
         font-size: 18pt;
         line-height: 24pt;
+        overflow: hidden;
     }
     #content {
         max-width: 1800px;
