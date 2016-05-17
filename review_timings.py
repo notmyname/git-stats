@@ -26,6 +26,7 @@ def load_data(filename, subject_len_limit=50):
     patch_data = {}
     unreviewed_patches = []
     no_follow_ups = []
+    need_review_followup = []
     with open(filename, 'rb') as f:
         for line in f:
             if line:
@@ -55,7 +56,8 @@ def load_data(filename, subject_len_limit=50):
                 comment_times_and_types.append((reviewer == owner, timestamp))
             if not comment_times_and_types:
                 continue
-            recent_timestamp = comment_times_and_types[0][1]  # should use min?
+            comment_times_and_types.sort(key=lambda x: x[1])
+            recent_timestamp = comment_times_and_types[0][1]
             owner_deltas = []
             reviewer_deltas = []
             last_is_owner = True  # assumes the first comment is from the author
@@ -87,9 +89,23 @@ def load_data(filename, subject_len_limit=50):
                 reviewer_avg = 0
                 unreviewed_patches.append((patch_number, subject, owner, review_data['status']))
                 # print patch_number
+            if reviewer_deltas and comment_times_and_types[-1][0]:
+                # has been reviewed, but the last thing is from the owner and
+                # there isn't an active negative review on it
+                has_active_negative_review = False
+                try:
+                    for approval in review_data['currentPatchSet']['approvals']:
+                        if approval['description'] in ('Verified', 'Code-Review', 'Workflow'):
+                            if int(approval['value']) < 0:
+                                has_active_negative_review = True
+                                break
+                except KeyError:
+                    pass
+                if not has_active_negative_review:
+                    need_review_followup.append((patch_number, subject, owner, review_data['status']))
             if any((owner_avg, reviewer_avg)):
                 patch_data[patch_number] = (owner_avg, reviewer_avg)
-    return patch_data, unreviewed_patches, no_follow_ups
+    return patch_data, unreviewed_patches, no_follow_ups, need_review_followup
 
 def histogram(data, name):
     name = 'count of %s response time by week' % name
@@ -104,7 +120,7 @@ if __name__ == '__main__':
     REVIEWS_FILENAME = 'swift-open-comments.patches'
     if '--all-patches' in sys.argv:
         REVIEWS_FILENAME = 'swift_gerrit_history.patches'
-    timing_data, unreviewed, owner_no_follow_ups = load_data(REVIEWS_FILENAME)
+    timing_data, unreviewed, owner_no_follow_ups, need_review_followup = load_data(REVIEWS_FILENAME)
 
     # REVIEWS_FILENAME = 'swiftclient-open-comments.patches'
     # if '--all-patches' in sys.argv:
@@ -136,6 +152,10 @@ if __name__ == '__main__':
     print ' std_deviation: %s' % str(datetime.timedelta(seconds=stats.std_deviation(reviewer_data)))
     print ' max_difference: %s' % str(datetime.timedelta(seconds=stats.min_max_difference(reviewer_data)))
     print ' %d unreviewed patches' % len(unreviewed)
+    print ' %d patches need reviewer follow-up' % len(need_review_followup)
     if '--show-unreviewed' in sys.argv:
         for patch_number in unreviewed:
-            print 'https://review.openstack.org/#/c/%d/' % patch_number
+            print 'https://review.openstack.org/#/c/%d/' % patch_number[0]
+    if '--show-need-review' in sys.argv:
+        for patch_number in need_review_followup:
+            print 'https://review.openstack.org/#/c/%d/' % patch_number[0]

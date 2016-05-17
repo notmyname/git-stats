@@ -124,7 +124,8 @@ h1 {
 
 @media(min-width:1315px){
     #content {
-      max-width: 1280px;
+      max-width: 1240px;
+        overflow: hidden;
     }
     #review_stats {
         width: 1240px;
@@ -133,11 +134,11 @@ h1 {
         display: none;
     }
     #review_stats div {
-        width: 20%;
+        width: 16%;
         display: inline;
         float: left;
         margin: 0;
-        padding: 0;
+        padding: 2px 0;
         font-size: 75%;
     }
     #review_stats div>span {
@@ -147,8 +148,10 @@ h1 {
     }
     .section{
       float:left;
+      padding: 0;
+      margin: 5px 0;
     }
-    #community_stars{
+    #community_stars, #activity_spark {
       float:right;
     }
 }
@@ -173,7 +176,7 @@ for the wall-mounted TV
         display: none;
     }
     #review_stats div {
-        width: 20%;
+        width: 16%;
         display: inline;
         float: left;
         margin: 0;
@@ -196,7 +199,7 @@ for the wall-mounted TV
     .section ol a .subject {
         text-decoration: none;
     }
-    #community_stars{
+    #community_stars, #activity_spark {
         float: right;
     }
     #activity_spark label {

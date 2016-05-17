@@ -16,9 +16,10 @@
     <h3>Review Stats</h3>
     <div id="open_patches"><span>Open Patches</span><span class="value">{open_patches}</span></div>
     <div id="owner_response"><span>Owner response time</span><span class="value">{owner_response}</span></div>
-    <div id="no_follow_ups"><span>Patches waiting on owner follow up</span><span class="value">{no_follow_ups}</span></div>
-    <div id="reviewer_response"><span>Reviewer response time</span><span class="value">{reviewer_response}</span></div>
+    <div id="no_follow_ups"><span>Need owner follow up</span><span class="value">{no_follow_ups}</span></div>
+    <div id="review_follow_ups"><span>Need reviewer follow up</span><span class="value">{need_followup_count}</span></div>
     <div id="unreviewed_patches"><span>Unreviewed patches</span><span class="value">{unreviewed_patches}</span></div>
+    <div id="reviewer_response"><span>Reviewer response time</span><span class="value">{reviewer_response}</span></div>
 </div>
 <div class="section" id="community_stars">
     <h3>Community Starred Patches</h3>
@@ -30,6 +31,12 @@
     <h3>Unreviewed Patches</h3>
     <ol>
         {unreviewed_list}
+    </ol>
+</div>
+<div class="section" id="need_followup_list">
+    <h3>Needs Reviewer Follow-Up</h3>
+    <ol>
+        {need_followup_list}
     </ol>
 </div>
 <div class="section" id="activity_spark">

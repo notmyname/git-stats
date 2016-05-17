@@ -27,13 +27,15 @@ template_vars = {
     'no_follow_ups': '',       # number of patches that have no owner follow up after review
     'total_contributors': '',  # total number of contributors
     'active_contributors': '', # number of active contributors
+    'need_followup_count': '', # number of patches that need review follow-up
+    'need_followup_list': '',  # list of patches that need review follo-up
 }
 
 template_vars['current_time'] = datetime.strftime(datetime.now(),
                                                   '%H:%M:%S %h %d, %Y')
 
-timing_data, unreviewed_patchnums, owner_no_follow_ups = review_timings.load_data(REVIEWS_FILENAME)
-client_timing_data, client_unreviewed_patchnums, client_owner_no_follow_ups = review_timings.load_data(CLIENT_REVIEWS_FILENAME)
+timing_data, unreviewed_patchnums, owner_no_follow_ups, need_review_followup = review_timings.load_data(REVIEWS_FILENAME)
+client_timing_data, client_unreviewed_patchnums, client_owner_no_follow_ups, client_need_review_followup = review_timings.load_data(CLIENT_REVIEWS_FILENAME)
 
 # timing_data.update(client_timing_data)
 
@@ -44,6 +46,7 @@ reviewer_data = sorted([x[1] for x in timing_data.itervalues()])[outliers:-outli
 
 template_vars['open_patches'] = '%d' % len(timing_data.keys())
 template_vars['unreviewed_patches'] = '%d' % (len(unreviewed_patchnums) )#+ len(client_unreviewed_patchnums))
+template_vars['need_followup_count'] = '%d' % len(need_review_followup)
 template_vars['no_follow_ups'] = '%d' % (len(owner_no_follow_ups) )#+ len(client_owner_no_follow_ups))
 owner_time = timedelta(seconds=stats.median(owner_data))
 reviewer_time = timedelta(seconds=stats.median(reviewer_data))
@@ -86,6 +89,11 @@ for num, subject, owner, status in reversed(unreviewed_patchnums):
 # for num, subject, owner, status in reversed(client_unreviewed_patchnums):
 #     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swiftclient'))
 template_vars['unreviewed_list'] = '\n'.join(out)
+
+out = []
+for num, subject, owner, status in reversed(need_review_followup):
+    out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift', weight='100'))
+template_vars['need_followup_list'] = '\n'.join(out)
 
 tmpl = open(TEMPLATE, 'rb').read()
 with open(OUTPUT_FILENAME, 'wb') as f:
