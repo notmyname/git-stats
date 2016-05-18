@@ -96,12 +96,16 @@ def weight_stars(stars_by_starer):
         all_stars.extend(starred)
     return all_stars
 
-def get_ordered_patches(subject_len_limit=50):
+def get_stars_by_starer(subject_len_limit=50):
     try:
         stars_by_starer = json.load(open(DATA_FILENAME))
     except IOError:
         stars_by_starer = load_starred_patches(subject_len_limit)
         json.dump(stars_by_starer, open(DATA_FILENAME, 'wb'))
+    return stars_by_starer
+
+def get_ordered_patches(subject_len_limit=50):
+    stars_by_starer = get_stars_by_starer()
 
     all_stars = weight_stars(stars_by_starer)
 
