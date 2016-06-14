@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 import json
+import unicodedata
 
 import review_timings
 import stats
@@ -80,6 +81,8 @@ for i, (patch, count) in enumerate(community_starred_patches):
         break
     weight = int((count / biggest_count) * 100)
     number, subject, owner, status = patch
+    subject = unicodedata.normalize('NFKD', subject).encode('ascii','ignore')
+    owner = unicodedata.normalize('NFKD', owner).encode('ascii','ignore')
     out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project='', weight=weight))
 template_vars['community_stars'] = '\n'.join(out)
 
