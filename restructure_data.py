@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 from collections import defaultdict
 import json
@@ -148,3 +148,7 @@ for p, w in get_ordered_patches():
 if out:
     print 'Community starred patches that need reviews:'
     print '\n'.join(out)
+
+
+# need to have "patches I've previously reviewed and have a new patch set now"
+# probably need to get every review from gerrit instead of just the last patch set

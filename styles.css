@@ -3,12 +3,21 @@ body {
     color: #ccc;
     font-family: Futura-Medium, sans-serif;
     font-size: 12pt;
+    overflow: hidden;
+}
+
+canvas {
+    z-index: -1;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 #content {
     position: relative;
     max-width: 640px;
     overflow: hidden;
+    background: transparent;
 }
 
 .section {
