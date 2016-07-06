@@ -216,13 +216,3 @@ for the wall-mounted TV
         font-size: 70%;
     }
 }
-
-
-.important_section {
-    display: block;
-    text-align: center;
-}
-
-.section {
-    display: none !important;
-}

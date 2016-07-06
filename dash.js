@@ -12,7 +12,7 @@ canvas.width = W;
 canvas.height = H;
 
 //snowflake particles
-var mp = 350; //max particles
+var mp = 150; //max particles
 var particles = [];
 for(var i = 0; i < mp; i++)
 {
