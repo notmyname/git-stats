@@ -3,7 +3,6 @@ body {
     color: #ccc;
     font-family: Futura-Medium, sans-serif;
     font-size: 12pt;
-    overflow: hidden;
 }
 
 canvas {
