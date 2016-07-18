@@ -17,6 +17,8 @@ REVIEWS_FILENAME = 'swift-open-comments.patches'
 TEMPLATE = 'dash_template.html'
 OUTPUT_FILENAME = 'swift_community_dashboard.html'
 
+LIST_LIMIT = 9
+
 template_vars = {
     'open_patches': '',        # number of open patches
     'owner_response': '',      # patch owner response time
@@ -77,7 +79,7 @@ out = []
 community_starred_patches = get_stars.get_ordered_patches()
 biggest_count = float(community_starred_patches[0][1])
 for i, (patch, count) in enumerate(community_starred_patches):
-    if i >= 20:
+    if i >= 15:
         break
     weight = int((count / biggest_count) * 100)
     number, subject, owner, status = patch
@@ -87,15 +89,19 @@ for i, (patch, count) in enumerate(community_starred_patches):
 template_vars['community_stars'] = '\n'.join(out)
 
 out = []
-for num, subject, owner, status in reversed(unreviewed_patchnums):
+for num, subject, owner, status in reversed(unreviewed_patchnums[:LIST_LIMIT]):
     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift', weight='100'))
 # for num, subject, owner, status in reversed(client_unreviewed_patchnums):
 #     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swiftclient'))
+if len(unreviewed_patchnums) > LIST_LIMIT:
+    out.append('<span>...</span>')
 template_vars['unreviewed_list'] = '\n'.join(out)
 
 out = []
-for num, subject, owner, status in reversed(need_review_followup):
+for num, subject, owner, status in reversed(need_review_followup[:LIST_LIMIT]):
     out.append(patch_tmpl.format(number=num, subject=subject, owner=owner.encode('utf8'), project='swift', weight='100'))
+if len(unreviewed_patchnums) > LIST_LIMIT:
+    out.append('<span>...</span>')
 template_vars['need_followup_list'] = '\n'.join(out)
 
 tmpl = open(TEMPLATE, 'rb').read()
