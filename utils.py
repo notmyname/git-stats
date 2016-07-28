@@ -61,6 +61,8 @@ RELEASE_DATES = (
     '2015-10-05', # liberty, 2.5.0
     '2016-01-25', # 2.6.0
     '2016-03-24', # mitaka, 2.7.0
+    '2016-06-09', # 2.8.0
+    '2016-07-14', # 2.9.0
 )
 
 def date_range(start_date, end_date, strings=True):
