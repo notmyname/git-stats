@@ -63,6 +63,7 @@ RELEASE_DATES = (
     '2016-03-24', # mitaka, 2.7.0
     '2016-06-09', # 2.8.0
     '2016-07-14', # 2.9.0
+    '2016-09-26', # newton, 2.10.0
 )
 
 def date_range(start_date, end_date, strings=True):
