@@ -7,6 +7,7 @@ ignored_authors = [  # known bots, not real people
     ('Jenkins', 'jenkins@review.openstack.org'),
     ('OpenStack Jenkins', 'jenkins@openstack.org'),
     ('Cloud User', 'cloud-user@bounce.cisco.com'),  # might be anne gentle, not sure
+    ('OpenStack Release Bot', 'infra-root@openstack.org'),
 ]
 
 authors = [x.strip() for x in open(sys.argv[2], 'rb').readlines()]
