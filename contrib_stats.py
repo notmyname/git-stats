@@ -212,9 +212,10 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_win
 def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_date, end_date):
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
+    len_all_dates = len(all_dates)
     for aw, rolling_avg_windows in actives_windows:
         for r_a_w in rolling_avg_windows:
-            pyplot.plot(x_vals, actives_avg[aw][r_a_w], '-',
+            pyplot.plot(x_vals, actives_avg[aw][r_a_w][-len_all_dates:], '-',
                         label="%d day avg (of %d day total)" % (r_a_w, aw), linewidth=3)
     pyplot.title('Active contributors (as of %s)' % datetime.datetime.now().date())
     pyplot.ylabel('Contributor Count')

@@ -93,13 +93,14 @@ for person in all_contributors:
 
 
 # email = 'tim@swiftstack.com'
-email = 'tim.burke@gmail.com'
+#email = 'tim.burke@gmail.com'
 # email = 'richard.hawkins@rackspace.com'
 # email = 'kellerbr@us.ibm.com'
 # email = 'me@not.mn'
 # email = 'jrichli@us.ibm.com'
 # email = 'alistair.coles@hpe.com'
-email = 'clay.gerrard@gmail.com'
+#email = 'clay.gerrard@gmail.com'
+email = 'mahati.chamarthy@gmail.com'
 
 weight, stars, reviews, owned, name, _ = person_info[email]
 print 'What should %s work on?' % name
