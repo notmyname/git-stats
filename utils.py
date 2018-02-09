@@ -21,6 +21,9 @@ excluded_authors = (
     'Trivial Rebase <trivial-rebase@review.openstack.org>'.lower(),
     'Coraid CI <coraid-openstack-ci-all@mirantis.com>'.lower(),
     'Gerrit Code Review <review@openstack.org>'.lower(),
+    'Zuul <zuul@review.openstack.org>'.lower(),
+    'OpenStack Release Bot <infra-root@openstack.org>'.lower(),
+    'Cloud User <cloud-user@bounce.cisco.com>'.lower()
 )
 
 RELEASE_DATES = (
@@ -67,6 +70,11 @@ RELEASE_DATES = (
     '2016-11-18', # 2.11.0
     '2016-12-15', # 2.12.0
     '2017-02-16', # ocata, 2.13.0
+    '2017-04-27', # 2.14.0
+    '2017-07-28', # 2.15.0
+    '2017-08-21', # pike, 2.15.1
+    '2017-11-13', # 2.16.0
+    '2018-02-05', # queens, 2.17.0
 )
 
 def date_range(start_date, end_date, strings=True):

@@ -77,15 +77,19 @@ patch_tmpl = '<li><a title="relative score: {weight}%" href="https://review.open
              '<span class="owner">{owner}</span></a></li>'
 out = []
 community_starred_patches = get_stars.get_ordered_patches()
-biggest_count = float(community_starred_patches[0][1])
-for i, (patch, count) in enumerate(community_starred_patches):
-    if i >= 15:
-        break
-    weight = int((count / biggest_count) * 100)
-    number, subject, owner, status = patch
-    subject = unicodedata.normalize('NFKD', subject).encode('ascii','ignore')
-    owner = unicodedata.normalize('NFKD', owner).encode('ascii','ignore')
-    out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project='', weight=weight))
+try:
+    biggest_count = float(community_starred_patches[0][1])
+except IndexError:
+    pass
+else:
+    for i, (patch, count) in enumerate(community_starred_patches):
+        if i >= 15:
+            break
+        weight = int((count / biggest_count) * 100)
+        number, subject, owner, status = patch
+        subject = unicodedata.normalize('NFKD', subject).encode('ascii','ignore')
+        owner = unicodedata.normalize('NFKD', owner).encode('ascii','ignore')
+        out.append(patch_tmpl.format(number=number, subject=subject, owner=owner, project='', weight=weight))
 template_vars['community_stars'] = '\n'.join(out)
 
 out = []

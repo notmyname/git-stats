@@ -2,13 +2,7 @@
 
 import sys
 
-ignored_authors = [  # known bots, not real people
-    ('OpenStack Proposal Bot', 'openstack-infra@lists.openstack.org'),
-    ('Jenkins', 'jenkins@review.openstack.org'),
-    ('OpenStack Jenkins', 'jenkins@openstack.org'),
-    ('Cloud User', 'cloud-user@bounce.cisco.com'),  # might be anne gentle, not sure
-    ('OpenStack Release Bot', 'infra-root@openstack.org'),
-]
+from utils import excluded_authors
 
 authors = [x.strip() for x in open(sys.argv[2], 'rb').readlines()]
 author_by_name = {}
@@ -32,7 +26,8 @@ for line in authors:
     vcs_authors.append((name, email))
 
 for name, email in vcs_authors:
-    if (name, email) in ignored_authors:
+    ne = '%s <%s>' % (name, email)
+    if ne.lower() in excluded_authors:
         continue
     if email not in author_by_email:
         print 'MISSING: %s (%s)' % (name, email)
