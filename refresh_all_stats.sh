@@ -14,6 +14,9 @@ rm -f all_stars.data
 # get reviewer history
 ./build_swift_gerrit_history.sh
 
+# get reviewer history
+./build_swiftclient_gerrit_history.sh
+
 # build weightings and graphs
 ./swift_contrib_stats.sh
 
