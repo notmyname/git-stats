@@ -3,7 +3,6 @@ import json
 import unicodedata
 
 COMMITS_FILENAME = 'contrib_stats.data'
-CLIENT_COMMITS_FILENAME = 'client_contrib_stats.data'
 REVIEWS_FILENAME = 'swift_gerrit_history.patches'
 CLIENT_REVIEWS_FILENAME = 'swiftclient_gerrit_history.patches'
 PEOPLE_MAP_FILENAME = '/Users/john/Documents/stackalytics/etc/default_data.json'

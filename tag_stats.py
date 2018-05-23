@@ -3,11 +3,13 @@
 import shlex
 import subprocess
 import sys
+import datetime
 
 from utils import RELEASES, date_range
 
 first = ('001407b969bc12d48bd7f10960f84f519bb19111', '2010-07-12')
-tags = [first] + [(tag, date) for (date, tag, cycle) in RELEASES] + [('review/alistair_coles/rev7', '2018-05-15')]
+today = datetime.datetime.now().strftime('%Y-%m-%d')
+tags = [first] + [(tag, date) for (date, tag, cycle) in RELEASES] + [('master', today)]
 tag_pairs = zip(*[tags[x::1] for x in (0, 1)])
 trigger = 'Total Physical Source Lines of Code (SLOC)'
 
