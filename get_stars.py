@@ -7,6 +7,7 @@ import shlex
 import json
 import sys
 from collections import Counter, defaultdict
+import unicodedata
 
 cmd = (
 '/usr/bin/ssh -p 29418 notmyname@review.openstack.org \'gerrit query '
@@ -122,4 +123,6 @@ if __name__ == '__main__':
         if i > 20:
             break
         number, subject, owner, status = patch
+        subject = unicodedata.normalize('NFKD', subject).encode('ascii', 'ignore')
+        owner = unicodedata.normalize('NFKD', owner).encode('ascii', 'ignore')
         print template % (subject, owner, number, count)
