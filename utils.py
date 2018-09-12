@@ -22,7 +22,8 @@ excluded_authors = (
     'Gerrit Code Review <review@openstack.org>'.lower(),
     'Zuul <zuul@review.openstack.org>'.lower(),
     'OpenStack Release Bot <infra-root@openstack.org>'.lower(),
-    'Cloud User <cloud-user@bounce.cisco.com>'.lower()
+    'Cloud User <cloud-user@bounce.cisco.com>'.lower(),
+    'Openstack Robot <infra-root@openstack.org>'.lower(),
 )
 
 RELEASES = (
