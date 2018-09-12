@@ -98,6 +98,10 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_win
         for key in data:
             first_day = min(first_day, min(data[key]))
             last_day = max(last_day, max(data[key]))
+        if datetime.datetime.strptime(last_day, '%Y-%m-%d') < start_date:
+            continue
+        if datetime.datetime.strptime(first_day, '%Y-%m-%d') > end_date:
+            continue
         order.append((first_day, last_day, person))
     order.sort(reverse=True)
     for first_day, last_day, person in order:
@@ -133,7 +137,7 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_win
 
     person_labels = []
     person_active = []
-    limited_all_dates_look_back = 365 * 1
+    limited_all_dates_look_back = 180
     for person, (yval, commit_data, review_data, cumulative_data, sparse_cumulative_data) in graphable_data.iteritems():
         name = person.split('<', 1)[0].strip()
         person_labels.append((yval, name))
@@ -149,6 +153,9 @@ def draw_contrib_activity_graph(dates_by_person, start_date, end_date, extra_win
         except ValueError:
             days_since_first_review = 0
         days_since_first = max(days_since_first_review, days_since_first_commit)
+        if days_since_first <= 0:
+            # you didn't make the filtering cutoff
+            continue
         # since your first commit, how much of the life of the project have you been active?
         percent_active = how_many_days_active_total / float(days_since_first)
         cumulative_percent_active = how_many_days_active_limited / float(limited_all_dates_look_back)
@@ -431,6 +438,8 @@ if __name__ == '__main__':
         json.dump(data, f)
 
     # draw graphs
-    draw_contrib_activity_graph(dates_by_person, global_first_date, global_last_date, max(contrib_window, review_window))
+    # only show a year for the contrib activity, because otherwise it's unweildy
+    year_ago = datetime.datetime.strptime(global_last_date, '%Y-%m-%d') - datetime.timedelta(days=365)
+    draw_contrib_activity_graph(dates_by_person, year_ago, global_last_date, max(contrib_window, review_window))
     draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
