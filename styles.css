@@ -1,7 +1,15 @@
+@font-face {
+    font-family: "B612-Regular";
+    src:
+        local("B612-Regular"),
+        url('B612-Regular.ttf')
+        format("truetype");
+}
+
 body {
     background: rgb(24,24,24);
     color: #ccc;
-    font-family: Futura-Medium, sans-serif;
+    font-family: B612-Regular, Futura-Medium, sans-serif;
     font-size: 12pt;
 }
 
