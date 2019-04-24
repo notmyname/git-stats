@@ -9,7 +9,7 @@ mv ${ORIGPWD}/swiftclient_gerrit_history.patches ${SWIFTDIR}/swiftclient_gerrit_
 mv ${ORIGPWD}/averages.data ${SWIFTDIR}/averages.data 2>/dev/null
 
 cd ${SWIFTDIR}
-python "$ORIGPWD"/contrib_stats.py $@
+python2.7 "$ORIGPWD"/contrib_stats.py $@
 mv ${SWIFTDIR}/active_contribs.png ${ORIGPWD}/active_contribs.png
 mv ${SWIFTDIR}/total_contribs.png ${ORIGPWD}/total_contribs.png
 mv ${SWIFTDIR}/active_contribs_small.png ${ORIGPWD}/active_contribs_small.png
