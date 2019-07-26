@@ -623,6 +623,7 @@ if __name__ == '__main__':
     # only show a year for the contrib activity, because otherwise it's unweildy
     year_ago = datetime.datetime.strptime(global_last_date, '%Y-%m-%d') - datetime.timedelta(days=365)
     draw_contrib_activity_graph(dates_by_person, year_ago, global_last_date, max(contrib_window, review_window))
+    draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_active_contribs_trends2(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
     # draw_active_contributors_predictions(people_by_date, global_first_date, global_last_date)

@@ -94,6 +94,7 @@ FEATURES = (
     ('2015-02-10', '2016-06-07', 'Encryption'),
     ('2016-07-15', '2017-06-12', 'Composite Rings'),
     ('2017-09-13', '2018-05-02', 'Container Sharding'),
+    ('2019-02-08', None, 'Lots of Small Files'),
     # ('2017-09-14', '2018-03-12', 'S3api Integration'),
     # ('2016-07-15', None, 'Py3 compatibility'),
 )
