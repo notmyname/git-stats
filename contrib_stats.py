@@ -5,7 +5,13 @@ from collections import defaultdict
 import json
 import re
 from matplotlib import pyplot
+import matplotlib
 import unicodedata
+from fbprophet import Prophet
+from fbprophet.plot import add_changepoints_to_plot
+import pandas
+import numpy
+import itertools
 
 from utils import RELEASE_DATES, excluded_authors, COMMITS_FILENAME, \
     REVIEWS_FILENAME, CLIENT_REVIEWS_FILENAME, \
@@ -339,6 +345,118 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     pyplot.close()
 
 
+def draw_active_contributors_predictions(people_by_date, start_date, end_date):
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+    all_dates = list(date_range(start_date, end_date))
+    days_to_predict = 365 * 2
+
+    contrib_data = {"ds": all_dates, "y":[]}
+    for d in all_dates:
+        todays_total = set()
+        todays_reviewers = people_by_date[d]['reviews']
+        todays_authors = people_by_date[d]['contribs']
+        todays_total.update(todays_reviewers)
+        todays_total.update(todays_authors)
+        t = len(todays_total)
+        # if t == 0:
+        #     t = None
+        contrib_data["y"].append(t)
+
+
+    dataframes = pandas.DataFrame.from_dict(contrib_data)
+    dataframes["cap"] = 25
+    dataframes["floor"] = 0
+    prophet = Prophet(
+        changepoint_prior_scale=7.5,
+        interval_width=0.025,
+        daily_seasonality="auto",
+        weekly_seasonality="auto",
+        yearly_seasonality="auto",
+        changepoint_range=0.80,
+        seasonality_prior_scale=2.0,
+        # uncertainty_samples=5000,
+        growth="logistic"
+    )
+    prophet.fit(dataframes)
+    forecast = prophet.make_future_dataframe(periods=days_to_predict, freq="D")
+    forecast["cap"] = 25
+    forecast["floor"] = 0
+    forecast = prophet.predict(forecast)
+
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    fig, ax = pyplot.subplots(1, 1, figsize=(10, 8))
+
+    # ax.plot(
+    #     [d.strftime("%Y-%m%d") for d in forecast["ds"]],
+    #     forecast["yhat"],
+    #     linestyle="-",
+    #     marker="None",
+    # )
+    # ax.plot(
+    #     contrib_data["ds"],
+    #     contrib_data["y"],
+    #     marker="o",
+    #     markersize=1.75,
+    #     linestyle="None",
+    # )
+    # ax.fill_between(
+    #     [d.strftime("%Y-%m%d") for d in forecast["ds"]],
+    #     forecast["yhat_upper"],
+    #     forecast["yhat_lower"],
+    #     alpha=0.5,
+    # )
+
+    fig = prophet.plot(forecast)
+    add_changepoints_to_plot(fig.gca(), prophet, forecast)
+
+    last_day_of_fact = datetime.datetime.strptime(
+        end_date, "%Y-%m-%d"
+    ) + datetime.timedelta(hours=24)
+    last_day_of_prediction = datetime.datetime.strptime(
+        end_date, "%Y-%m-%d"
+    ) + datetime.timedelta(hours=24*days_to_predict)
+    # x_tick_locs = []
+    # x_tick_vals = []
+    # all_dates = list(date_range(start_date, last_day_of_prediction))
+    # for i, d in enumerate(all_dates):
+    #     # if d in RELEASE_DATES:
+    #     #     ax.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+    #     if not i % 60:
+    #         x_tick_locs.append(i)
+    #         x_tick_vals.append(d)
+    # x_tick_locs.append(len(all_dates))
+    # if len(all_dates) - x_tick_locs[-1] > 30:
+    #     x_tick_vals.append(all_dates[-1])
+    # ax.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
+    # # ax.grid(b=True, which='both', axis='both')
+    # ax.xlim(-1, x_tick_locs[-1] + 1)
+    # ax.ylim(0, x_tick_locs[-1] + 1)
+    # ldi = all_dates.index(last_day_of_fact.strftime("%Y-%m%d"))
+    labels = ax.get_xticklabels()
+    pyplot.setp(labels, rotation=30, horizontalalignment="right")
+    pyplot.axvline(x=last_day_of_fact, color="black", linestyle="--")
+    pyplot.title("Contributor Count Predictions")
+    # pyplot.ylim(bottom=0)
+    # pyplot.tight_layout()
+    pyplot.style.use("fivethirtyeight")
+    matplotlib.rcParams["font.sans-serif"] = "B612"
+    matplotlib.rcParams["font.family"] = "B612"
+    matplotlib.rcParams["axes.labelsize"] = 10
+    matplotlib.rcParams["xtick.labelsize"] = 8
+    matplotlib.rcParams["ytick.labelsize"] = 8
+    matplotlib.rcParams["text.color"] = "k"
+
+    fig = pyplot.gcf()
+    fig.set_size_inches(24, 8)
+
+    fig.savefig("contrib_predictions.png")
+
+    fig2 = prophet.plot_components(forecast)
+    fig2.savefig("contrib_predictions_components.png")
+
+
+
 if __name__ == '__main__':
     # load patch info
     contribs_by_date, ts_by_person = load_commits()
@@ -446,3 +564,4 @@ if __name__ == '__main__':
     draw_contrib_activity_graph(dates_by_person, year_ago, global_last_date, max(contrib_window, review_window))
     draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
+    # draw_active_contributors_predictions(people_by_date, global_first_date, global_last_date)
