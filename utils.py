@@ -86,6 +86,18 @@ RELEASES = (
 
 RELEASE_DATES = [x[0] for x in RELEASES]
 
+FEATURES = (
+    # start date, end data, feature name
+    ('2013-03-04', '2013-07-02', 'Global Clusters'),
+    ('2013-07-10', '2014-04-07', 'Storage Policies'),
+    ('2014-06-30', '2015-04-02', 'Erasure Codes'),
+    ('2015-02-10', '2016-06-07', 'Encryption'),
+    ('2016-07-15', '2017-06-12', 'Composite Rings'),
+    ('2017-09-13', '2018-05-02', 'Container Sharding'),
+    # ('2017-09-14', '2018-03-12', 'S3api Integration'),
+    # ('2016-07-15', None, 'Py3 compatibility'),
+)
+
 def date_range(start_date, end_date, strings=True):
     '''yields an inclusive list of dates'''
     step = datetime.timedelta(days=1)
