@@ -16,7 +16,7 @@ import itertools
 from utils import RELEASE_DATES, excluded_authors, COMMITS_FILENAME, \
     REVIEWS_FILENAME, CLIENT_REVIEWS_FILENAME, \
     PERCENT_ACTIVE_FILENAME, date_range, map_people, map_one_person, \
-    AVERAGES_FILENAME
+    AVERAGES_FILENAME, FEATURES
 from parse_commits_into_json import load_commits
 
 
@@ -275,6 +275,66 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     fig.savefig('active_contribs_small.png', bbox_inches='tight', pad_inches=0)
     pyplot.close()
 
+def draw_active_contribs_trends2(actives_windows, actives, actives_avg, start_date, end_date):
+    #todo shade between vertical lines to deliniate feature work (eg sp or ec or crypto)
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    pyplot.style.use("fivethirtyeight")
+    matplotlib.rcParams["font.sans-serif"] = "B612"
+    matplotlib.rcParams["font.family"] = "B612"
+    matplotlib.rcParams["axes.labelsize"] = 10
+    matplotlib.rcParams["xtick.labelsize"] = 8
+    matplotlib.rcParams["ytick.labelsize"] = 8
+    matplotlib.rcParams["text.color"] = "k"
+
+    prop_cycle = pyplot.rcParams["axes.prop_cycle"]
+    all_colors = itertools.cycle(prop_cycle.by_key()["color"])
+
+    all_dates = list(date_range(start_date, end_date))
+    x_vals = range(len(all_dates))
+    len_all_dates = len(all_dates)
+    max_yval = 0
+    for aw, rolling_avg_windows in actives_windows:
+        for r_a_w in rolling_avg_windows:
+            pyplot.plot(x_vals, actives_avg[aw][r_a_w][-len_all_dates:], '-',
+                        label="%d day avg of %d day total" % (r_a_w, aw), linewidth=3,
+                        color=next(all_colors))
+            max_yval = max(max_yval, *actives_avg[aw][r_a_w][-len_all_dates:])
+    x_tick_locs = []
+    x_tick_vals = []
+    for i, d in enumerate(all_dates):
+        # if d in RELEASE_DATES:
+        #     pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+        # if not i % 60:
+        y,m,day = d.split('-')
+        if m in ('01', '04', '07', '10') and day == '01':
+            x_tick_locs.append(i)
+            x_tick_vals.append(d)
+    x_tick_locs.append(len(all_dates))
+    if len(all_dates) - x_tick_locs[-1] > 30:
+        x_tick_vals.append(all_dates[-1])
+    pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
+
+    for start, end, name in FEATURES:
+        start_index = all_dates.index(start)
+        if end is None:
+            end_index = len(all_dates)
+        else:
+            end_index = all_dates.index(end)
+        pyplot.axvspan(start_index, end_index, label=name, alpha=0.3, color=next(all_colors))
+
+    pyplot.title('Active contributors (as of %s)' % datetime.datetime.now().date())
+    pyplot.ylabel('Contributor Count')
+    pyplot.legend(loc='best')
+    pyplot.grid(b=True, which='both', axis='both')
+    pyplot.xlim(-1, x_tick_locs[-1] + 1)
+    pyplot.ylim(0, max_yval + 5)
+    ax = pyplot.gca()
+    fig = pyplot.gcf()
+    fig.set_size_inches(24, 8)
+    fig.set_frameon(False)
+    fig.savefig('active_contribs.png', bbox_inches='tight', pad_inches=0.25)
+    pyplot.close()
+
 def draw_total_contributors_graph(people_by_date, start_date, end_date):
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
@@ -492,8 +552,9 @@ if __name__ == '__main__':
 
     actives_windows = [
         # (days, (rolling_avg_span, ...))
-        (30, (180, 365)),
-        (7, (30, 180)),
+        # (30, (180, 365)),
+        # (7, (30, 180)),
+        (7, (90,)),
     ]
     actives = {x: [] for (x, _) in actives_windows}
     rolling_sets = {x: RollingSet(x) for (x, _) in actives_windows}
@@ -562,6 +623,6 @@ if __name__ == '__main__':
     # only show a year for the contrib activity, because otherwise it's unweildy
     year_ago = datetime.datetime.strptime(global_last_date, '%Y-%m-%d') - datetime.timedelta(days=365)
     draw_contrib_activity_graph(dates_by_person, year_ago, global_last_date, max(contrib_window, review_window))
-    draw_active_contribs_trends(actives_windows, actives, actives_avg, global_first_date, global_last_date)
+    draw_active_contribs_trends2(actives_windows, actives, actives_avg, global_first_date, global_last_date)
     draw_total_contributors_graph(people_by_date, global_first_date, global_last_date)
     # draw_active_contributors_predictions(people_by_date, global_first_date, global_last_date)
