@@ -269,7 +269,7 @@ def draw_active_contribs_trends(actives_windows, actives, actives_avg, start_dat
     pyplot.xlim(-1, window + 1)
     ax = pyplot.gca()
     ax.set_frame_on(True)
-    ax.set_facecolor('black')  # change to (24, 24, 24)
+    # ax.set_facecolor('black')  # change to (24, 24, 24)
     fig = pyplot.gcf()
     fig.set_size_inches(2, 2./3)
     fig.savefig('active_contribs_small.png', bbox_inches='tight', pad_inches=0)
