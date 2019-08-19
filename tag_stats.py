@@ -42,7 +42,10 @@ def stats_at_tag(tag):
         if line.startswith(trigger):
             raw_line_count = line.strip().rsplit('=', 1)[1].strip().replace(',', '')
             test_line_count = int(raw_line_count)
-    ratio = float(test_line_count) / float(code_line_count)
+    try:
+        ratio = float(test_line_count) / float(code_line_count)
+    except ZeroDivisionError:
+        ratio = '-'
     return code_line_count, test_line_count, ratio
 
 
