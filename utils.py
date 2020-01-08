@@ -82,6 +82,7 @@ RELEASES = (
     ('2018-12-17', '2.20.0', None),
     ('2019-03-25', '2.21.0', 'stein'),
     ('2019-07-22', '2.22.0', None),
+    ('2019-10-03', '2.23.0', 'train'),
 )
 
 RELEASE_DATES = [x[0] for x in RELEASES]
@@ -94,7 +95,7 @@ FEATURES = (
     ('2015-02-10', '2016-06-07', 'Encryption'),
     ('2016-07-15', '2017-06-12', 'Composite Rings'),
     ('2017-09-13', '2018-05-02', 'Container Sharding'),
-    ('2019-02-08', None, 'Lots of Small Files'),
+    ('2019-02-08', '2019-11-04', 'Lots of Small Files'),
     # ('2017-09-14', '2018-03-12', 'S3api Integration'),
     # ('2016-07-15', None, 'Py3 compatibility'),
 )
