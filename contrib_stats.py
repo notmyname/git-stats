@@ -336,6 +336,11 @@ def draw_active_contribs_trends2(actives_windows, actives, actives_avg, start_da
     pyplot.close()
 
 def draw_total_contributors_graph(people_by_date, start_date, end_date):
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+    prop_cycle = pyplot.rcParams["axes.prop_cycle"]
+    all_colors = itertools.cycle(prop_cycle.by_key()["color"])
+
     all_dates = list(date_range(start_date, end_date))
     x_vals = range(len(all_dates))
     total_yvals = []
@@ -360,20 +365,20 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     lens = map(len, [total_yvals, reviewers_yvals, authors_yvals])
     assert len(set(lens)) == 1, lens
 
-    pyplot.plot(x_vals, total_yvals, '-', color='red',
+    pyplot.plot(x_vals, total_yvals, '-', color=next(all_colors),
                label="Total contributors", drawstyle="steps", linewidth=3)
-    pyplot.plot(x_vals, reviewers_yvals, '-', color='green',
-               label="Total reviewers", drawstyle="steps", linewidth=3)
-    pyplot.plot(x_vals, authors_yvals, '-', color='blue',
-               label="Total authors", drawstyle="steps", linewidth=3)
+    pyplot.plot(x_vals, reviewers_yvals, '-', color=next(all_colors),
+               label="Total reviewers", drawstyle="steps", linewidth=1.5)
+    pyplot.plot(x_vals, authors_yvals, '-', color=next(all_colors),
+               label="Total authors", drawstyle="steps", linewidth=1.5)
     pyplot.title('Total contributors (as of %s)' % datetime.datetime.now().date())
     pyplot.ylabel('Contributors')
     pyplot.legend(loc='upper left')
     x_tick_locs = []
     x_tick_vals = []
     for i, d in enumerate(all_dates):
-        if d in RELEASE_DATES:
-            pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
+        # if d in RELEASE_DATES:
+        #     pyplot.axvline(x=i, alpha=0.3, color='#469bcf', linewidth=2)
         if not i % 60:
             x_tick_locs.append(i)
             x_tick_vals.append(d)
@@ -383,6 +388,15 @@ def draw_total_contributors_graph(people_by_date, start_date, end_date):
     pyplot.xticks(x_tick_locs, x_tick_vals, rotation=30, horizontalalignment='right')
     pyplot.xlim(-1, x_tick_locs[-1] + 1)
     pyplot.grid(b=True, which='both', axis='both')
+
+    pyplot.style.use("fivethirtyeight")
+    matplotlib.rcParams["font.sans-serif"] = "B612"
+    matplotlib.rcParams["font.family"] = "B612"
+    matplotlib.rcParams["axes.labelsize"] = 10
+    matplotlib.rcParams["xtick.labelsize"] = 8
+    matplotlib.rcParams["ytick.labelsize"] = 8
+    matplotlib.rcParams["text.color"] = "k"
+
     fig = pyplot.gcf()
     fig.set_size_inches(24, 8)
     fig.savefig('total_contribs.png', bbox_inches='tight', pad_inches=0.25)
